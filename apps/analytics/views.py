@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import render
-from .player_names import humanize_player_name
+from .player_names import humanize_player_name, resolve_player_search_terms
 
 logger = logging.getLogger(__name__)
 
@@ -156,35 +156,101 @@ def showcase_view(request):
                     caps_data["purple"] = purple_list
 
             elif tab == "player" and player_query:
-                # 1. Search player by name
-                search_resp = client.get(
-                    "/api/v1/players", params={"search": player_query, "limit": 5}
-                )
-                if search_resp.status_code == 200:
-                    results = search_resp.json()
-                    items = results.get("items", results) if isinstance(results, dict) else results
-                    if items and len(items) > 0:
-                        first_player = items[0]
-                        player_id = first_player.get("id") or first_player.get("player_id")
-                        if player_id:
-                            profile_resp = client.get(f"/api/v1/players/{player_id}")
-                            if profile_resp.status_code == 200:
-                                player_data = profile_resp.json()
-                            else:
-                                player_data = first_player
-                        else:
-                            player_data = first_player
+                candidate_terms = resolve_player_search_terms(player_query)
+                found_player = None
 
-                        if isinstance(player_data, dict):
-                            raw_name = player_data.get("name") or player_data.get("player_name") or player_query
-                            player_data["display_name"] = humanize_player_name(raw_name)
-                            player_data["display_id"] = player_data.get("id") or player_data.get("player_id") or "N/A"
-                            player_data["display_runs"] = player_data.get("total_runs") or player_data.get("runs") or 0
-                            player_data["display_sr"] = player_data.get("strike_rate") or player_data.get("sr") or "N/A"
-                            player_data["display_wickets"] = player_data.get("wickets") or player_data.get("total_wickets") or 0
-                            player_data["display_econ"] = player_data.get("economy_rate") or player_data.get("economy") or player_data.get("econ") or "N/A"
+                for term in candidate_terms:
+                    try:
+                        search_resp = client.get(
+                            "/api/v1/players", params={"search": term, "limit": 10}
+                        )
+                        if search_resp.status_code == 200:
+                            results = search_resp.json()
+                            items = (
+                                results.get("items", results)
+                                if isinstance(results, dict)
+                                else results
+                            )
+                            if items and len(items) > 0:
+                                # Prioritize exact match if possible, otherwise choose first
+                                for item in items:
+                                    pname = (item.get("player_name") or item.get("name") or "").lower()
+                                    if pname == term.lower():
+                                        found_player = item
+                                        break
+                                if not found_player:
+                                    found_player = items[0]
+                                break
+                    except Exception:
+                        continue
+
+                if found_player:
+                    player_id = found_player.get("id") or found_player.get("player_id")
+                    if player_id:
+                        profile_resp = client.get(f"/api/v1/players/{player_id}")
+                        if profile_resp.status_code == 200:
+                            player_data = profile_resp.json()
+                        else:
+                            player_data = found_player
                     else:
-                        error_message = f"No cricketer found matching '{player_query}'."
+                        player_data = found_player
+
+                    if isinstance(player_data, dict):
+                        raw_name = (
+                            player_data.get("name")
+                            or player_data.get("player_name")
+                            or player_query
+                        )
+                        batting = player_data.get("batting") or {}
+                        bowling = player_data.get("bowling") or {}
+
+                        player_data["display_name"] = humanize_player_name(raw_name)
+                        player_data["display_id"] = (
+                            player_data.get("id") or player_data.get("player_id") or "N/A"
+                        )
+                        player_data["display_runs"] = (
+                            batting.get("total_runs")
+                            or player_data.get("total_runs")
+                            or player_data.get("runs")
+                            or 0
+                        )
+                        player_data["display_sr"] = (
+                            batting.get("strike_rate")
+                            or player_data.get("strike_rate")
+                            or player_data.get("sr")
+                            or "N/A"
+                        )
+                        player_data["display_wickets"] = (
+                            bowling.get("wickets")
+                            or bowling.get("total_wickets")
+                            or player_data.get("wickets")
+                            or player_data.get("total_wickets")
+                            or 0
+                        )
+                        player_data["display_econ"] = (
+                            bowling.get("economy_rate")
+                            or bowling.get("economy")
+                            or bowling.get("econ")
+                            or player_data.get("economy_rate")
+                            or player_data.get("economy")
+                            or player_data.get("econ")
+                            or "N/A"
+                        )
+                        player_data["display_matches"] = (
+                            batting.get("matches_played")
+                            or player_data.get("matches_played")
+                            or 0
+                        )
+                        player_data["display_average"] = (
+                            batting.get("batting_average")
+                            or player_data.get("batting_average")
+                            or "N/A"
+                        )
+                        player_data["display_fours"] = batting.get("fours") or 0
+                        player_data["display_sixes"] = batting.get("sixes") or 0
+                        player_data["display_overs"] = bowling.get("overs_bowled") or 0
+                else:
+                    error_message = f"No cricketer found matching '{player_query}'."
 
     except httpx.ConnectError:
         error_message = (

@@ -143,6 +143,86 @@ CANONICAL_PLAYER_NAMES: dict[str, str] = {
     "ut yadav": "Umesh Yadav",
 }
 
+# Common fan/cricket broadcast nicknames mapped to canonical display names
+CRICKET_NICKNAMES: dict[str, str] = {
+    "king kohli": "v kohli",
+    "chiku": "v kohli",
+    "thala": "ms dhoni",
+    "captain cool": "ms dhoni",
+    "hitman": "rg sharma",
+    "sky": "sa yadav",
+    "boom boom": "jj bumrah",
+    "boom boom bumrah": "jj bumrah",
+    "abd": "ab de villiers",
+    "mr 360": "ab de villiers",
+    "universe boss": "ch gayle",
+    "jaddu": "ra jadeja",
+    "sir jadeja": "ra jadeja",
+    "bhuvi": "b kumar",
+    "lord shardul": "sn thakur",
+    "lord": "sn thakur",
+    "ash": "r ashwin",
+    "gabbar": "s dhawan",
+}
+
+
+def resolve_player_search_terms(query: str | None) -> list[str]:
+    """
+    Translates a user's natural language or formal player search (e.g. 'Virat Kohli',
+    'Rohit Sharma', 'King Kohli', 'Bumrah', 'Dhoni') into candidate search keys compatible
+    with the Cricsheet/DuckDB analytical engine.
+    """
+    if not query:
+        return []
+
+    cleaned = str(query).strip().lower()
+    if not cleaned:
+        return []
+
+    candidates: list[str] = []
+
+    # 1. Nickname direct lookup
+    if cleaned in CRICKET_NICKNAMES:
+        candidates.append(CRICKET_NICKNAMES[cleaned])
+
+    # 2. Reverse exact lookup from Canonical Display Names
+    rev_canonical = {disp.lower(): cricsheet_key for cricsheet_key, disp in CANONICAL_PLAYER_NAMES.items()}
+    if cleaned in rev_canonical:
+        if rev_canonical[cleaned] not in candidates:
+            candidates.append(rev_canonical[cleaned])
+
+    # 3. Match substrings and words in canonical display names
+    for cricsheet_key, disp in CANONICAL_PLAYER_NAMES.items():
+        disp_lower = disp.lower()
+        if cleaned == disp_lower or cleaned in disp_lower:
+            if cricsheet_key not in candidates:
+                candidates.append(cricsheet_key)
+
+    # 4. Generate Cricsheet-style initials + surname heuristic
+    # E.g. 'Virat Kohli' -> 'v kohli'
+    # E.g. 'Mahendra Singh Dhoni' -> 'ms dhoni'
+    words = [w for w in cleaned.split() if w]
+    if len(words) >= 2:
+        cand_initial = f"{words[0][0]} {words[-1]}"
+        if cand_initial not in candidates:
+            candidates.append(cand_initial)
+
+        initials_prefix = "".join(w[0] for w in words[:-1])
+        cand_all_initials = f"{initials_prefix} {words[-1]}"
+        if cand_all_initials not in candidates:
+            candidates.append(cand_all_initials)
+
+        # Surname alone (e.g. 'Kohli', 'Bumrah', 'Sharma')
+        surname = words[-1]
+        if surname not in candidates:
+            candidates.append(surname)
+
+    # 5. Fallback to raw cleaned query
+    if cleaned not in candidates:
+        candidates.append(cleaned)
+
+    return candidates
+
 
 def humanize_player_name(raw_name: str | None) -> str:
     """

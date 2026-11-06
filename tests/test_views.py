@@ -126,6 +126,51 @@ class TestPublicAndShowcaseViews:
         resp_player = client.get(showcase_url, {"tab": "player", "player": "Kohli"})
         assert resp_player.status_code == 200
 
+    @patch("apps.analytics.views.get_engine_client")
+    def test_player_scout_resolves_virat_kohli_and_nested_profile(self, mock_get_client, client):
+        mock_client = MagicMock()
+
+        def mock_get(url, params=None):
+            resp = MagicMock()
+            if "players/ba607b88" in url:
+                resp.status_code = 200
+                resp.json.return_value = {
+                    "player_id": "ba607b88",
+                    "player_name": "v kohli",
+                    "batting": {
+                        "matches_played": 275,
+                        "total_runs": 9336,
+                        "strike_rate": 134.8,
+                        "fours": 844,
+                        "sixes": 316,
+                        "batting_average": 40.42,
+                    },
+                    "bowling": {"wickets": 4, "economy_rate": 8.8},
+                }
+            elif "players" in url:
+                if params and params.get("search") == "v kohli":
+                    resp.status_code = 200
+                    resp.json.return_value = {
+                        "total": 1,
+                        "items": [{"player_id": "ba607b88", "player_name": "v kohli"}],
+                    }
+                else:
+                    resp.status_code = 200
+                    resp.json.return_value = {"total": 0, "items": []}
+            return resp
+
+        mock_client.get.side_effect = mock_get
+        mock_client.__enter__.return_value = mock_client
+        mock_get_client.return_value = mock_client
+
+        showcase_url = reverse("analytics:showcase")
+        resp = client.get(showcase_url, {"tab": "player", "player": "virat kohli"})
+        assert resp.status_code == 200
+        content = resp.content.decode()
+        assert "Virat Kohli" in content
+        assert "9336" in content
+        assert "134.8" in content
+
     @patch("httpx.Client.get")
     def test_live_query_proxy_handles_requests(self, mock_get, client):
         mock_resp = MagicMock()

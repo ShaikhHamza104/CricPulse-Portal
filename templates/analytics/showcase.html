@@ -261,11 +261,21 @@
       <div class="card-crisp p-6">
         <form method="GET" action="{% url 'analytics:showcase' %}" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <input type="hidden" name="tab" value="player">
-          <input type="text" name="player" value="{{ player_query }}" placeholder="Search player name (e.g. Kohli, Bumrah, Dhoni, Rohit, Russell)..." required class="flex-grow px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+          <input type="text" name="player" value="{{ player_query }}" placeholder="Search player name (e.g. Virat Kohli, Rohit Sharma, MS Dhoni, Jasprit Bumrah)..." required class="flex-grow px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
           <button type="submit" class="px-6 py-2.5 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-sm whitespace-nowrap">
             Search Player
           </button>
         </form>
+        <div class="flex items-center gap-2 mt-3 text-xs text-slate-500 flex-wrap">
+          <span class="font-medium text-slate-400">Quick suggestions:</span>
+          <a href="?tab=player&player=Virat+Kohli" class="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 transition font-medium">Virat Kohli</a>
+          <a href="?tab=player&player=MS+Dhoni" class="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 transition font-medium">MS Dhoni</a>
+          <a href="?tab=player&player=Rohit+Sharma" class="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 transition font-medium">Rohit Sharma</a>
+          <a href="?tab=player&player=Jasprit+Bumrah" class="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 transition font-medium">Jasprit Bumrah</a>
+          <a href="?tab=player&player=Hardik+Pandya" class="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 transition font-medium">Hardik Pandya</a>
+          <a href="?tab=player&player=AB+de+Villiers" class="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 transition font-medium">AB de Villiers</a>
+          <a href="?tab=player&player=Sunil+Narine" class="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 transition font-medium">Sunil Narine</a>
+        </div>
       </div>
 
       <!-- Player Profile Card -->
@@ -281,6 +291,7 @@
             </div>
           </div>
 
+          <!-- Primary Career Aggregates -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
               <span class="text-xs text-slate-500 font-semibold uppercase">Batting Runs</span>
@@ -297,6 +308,26 @@
             <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
               <span class="text-xs text-slate-500 font-semibold uppercase">Bowling Economy</span>
               <div class="text-2xl font-extrabold text-sky-600 mt-1">{{ player_data.display_econ }}</div>
+            </div>
+          </div>
+
+          <!-- Secondary Career Highlights -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-1">
+            <div class="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80">
+              <span class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Matches</span>
+              <div class="text-lg font-bold text-slate-800 mt-0.5">{{ player_data.display_matches|default:"0" }}</div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80">
+              <span class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Batting Avg</span>
+              <div class="text-lg font-bold text-slate-800 mt-0.5">{{ player_data.display_average|default:"N/A" }}</div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80">
+              <span class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Fours (4s)</span>
+              <div class="text-lg font-bold text-slate-800 mt-0.5">{{ player_data.display_fours|default:"0" }}</div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80">
+              <span class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Sixes (6s)</span>
+              <div class="text-lg font-bold text-slate-800 mt-0.5">{{ player_data.display_sixes|default:"0" }}</div>
             </div>
           </div>
         </div>
