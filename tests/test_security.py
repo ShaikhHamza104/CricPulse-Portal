@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import MagicMock, patch
 from django.urls import reverse
 
@@ -135,10 +136,37 @@ def test_internal_verify_key_unauthorized_without_secret(client):
     assert resp.status_code == 403
 
 
+def test_internal_verify_key_wrong_secret_gives_403(client):
+    verify_url = reverse("portal:internal_verify_key")
+    resp = client.get(
+        verify_url,
+        {"key": "some_key"},
+        HTTP_X_INTERNAL_SECRET="invalid-wrong-secret",
+    )
+    assert resp.status_code == 403
+    assert resp.json()["valid"] is False
+
+
+def test_internal_verify_key_rejects_query_string_secret(client, django_user_model):
+    from apps.portal.models import APIKey
+    user = django_user_model.objects.create_user(username="qs_secret_user", password="Password123!")
+    key_obj = APIKey.objects.create(user=user, name="QS Key")
+
+    verify_url = reverse("portal:internal_verify_key")
+    # Secret sent via query parameter must be rejected
+    resp = client.get(
+        f"{verify_url}?key={key_obj.key}&secret=cricpulse-internal-secret-2026"
+    )
+    assert resp.status_code == 403
+    assert resp.json()["valid"] is False
+
+
 def test_internal_verify_key_active_key_succeeds(client, django_user_model):
     from apps.portal.models import APIKey
     user = django_user_model.objects.create_user(username="verify_user", password="Password123!")
     key_obj = APIKey.objects.create(user=user, name="Live Key", tier="pro", rate_limit_per_minute=300)
+    assert key_obj.total_requests == 0
+    assert key_obj.last_used_at is None
 
     verify_url = reverse("portal:internal_verify_key")
     resp = client.get(
@@ -152,6 +180,11 @@ def test_internal_verify_key_active_key_succeeds(client, django_user_model):
     assert data["is_active"] is True
     assert data["tier"] == "pro"
     assert data["rate_limit_per_minute"] == 300
+
+    # Verify usage counters updated atomically
+    key_obj.refresh_from_db()
+    assert key_obj.total_requests == 1
+    assert key_obj.last_used_at is not None
 
 
 def test_internal_verify_key_revoked_key_rejected(client, django_user_model):
@@ -170,3 +203,31 @@ def test_internal_verify_key_revoked_key_rejected(client, django_user_model):
     assert data["valid"] is False
     assert data["is_active"] is False
     assert data["reason"] == "revoked"
+
+
+def test_production_missing_secrets_raises_improperly_configured(monkeypatch):
+    import importlib
+    from django.core.exceptions import ImproperlyConfigured
+    import config.settings
+
+    # Prevent load_dotenv from re-reading .env file during unit test reload
+    monkeypatch.setattr("dotenv.load_dotenv", lambda *args, **kwargs: None)
+
+    # Verify missing DJANGO_SECRET_KEY in production raises ImproperlyConfigured
+    monkeypatch.setenv("DJANGO_DEBUG", "False")
+    monkeypatch.delenv("DJANGO_SECRET_KEY", raising=False)
+    monkeypatch.setenv("INTERNAL_SERVICE_SECRET", "some-secret")
+    with pytest.raises(ImproperlyConfigured, match="DJANGO_SECRET_KEY"):
+        importlib.reload(config.settings)
+
+    # Verify missing INTERNAL_SERVICE_SECRET in production raises ImproperlyConfigured
+    monkeypatch.setenv("DJANGO_SECRET_KEY", "prod-secret-key-1234567890")
+    monkeypatch.delenv("INTERNAL_SERVICE_SECRET", raising=False)
+    with pytest.raises(ImproperlyConfigured, match="INTERNAL_SERVICE_SECRET"):
+        importlib.reload(config.settings)
+
+    # Clean reload in dev mode so subsequent tests run normally
+    monkeypatch.setenv("DJANGO_DEBUG", "True")
+    monkeypatch.setenv("DJANGO_SECRET_KEY", "django-insecure-test")
+    monkeypatch.setenv("INTERNAL_SERVICE_SECRET", "cricpulse-internal-secret-2026")
+    importlib.reload(config.settings)

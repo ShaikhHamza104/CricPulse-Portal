@@ -12,19 +12,30 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Load environment variables from .env file
 load_dotenv(BASE_DIR / ".env")
 
-# Security
-SECRET_KEY = os.getenv(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-cricpulse-portal-super-secret-key-change-in-production-2026",
-)
-INTERNAL_SERVICE_SECRET = os.getenv(
-    "INTERNAL_SERVICE_SECRET",
-    "cricpulse-internal-secret-2026",
-)
+# Security & Debug mode
 DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")
+
+if not DEBUG:
+    SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+    if not SECRET_KEY:
+        raise ImproperlyConfigured("DJANGO_SECRET_KEY environment variable must be set when DEBUG is False.")
+    INTERNAL_SERVICE_SECRET = os.getenv("INTERNAL_SERVICE_SECRET")
+    if not INTERNAL_SERVICE_SECRET:
+        raise ImproperlyConfigured("INTERNAL_SERVICE_SECRET environment variable must be set when DEBUG is False.")
+else:
+    SECRET_KEY = os.getenv(
+        "DJANGO_SECRET_KEY",
+        "django-insecure-cricpulse-portal-super-secret-key-change-in-production-2026",
+    )
+    INTERNAL_SERVICE_SECRET = os.getenv(
+        "INTERNAL_SERVICE_SECRET",
+        "cricpulse-internal-secret-2026",
+    )
 
 allowed_hosts_str = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0,.onrender.com")
 ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_str.split(",") if h.strip()]

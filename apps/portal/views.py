@@ -1,10 +1,13 @@
+import hmac
 import logging
 import httpx
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import F
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 from .models import APIKey
 
@@ -411,11 +414,9 @@ def verify_key_internal_view(request):
     Called by CricPulse-Engine backend to validate real-time API key status,
     active tiers, rate limits, and instantaneous revocation enforcement.
     """
-    secret = request.headers.get("X-Internal-Secret") or request.GET.get("secret")
-    expected_secret = getattr(
-        settings, "INTERNAL_SERVICE_SECRET", "cricpulse-internal-secret-2026"
-    )
-    if not secret or secret != expected_secret:
+    secret = request.headers.get("X-Internal-Secret", "")
+    expected_secret = getattr(settings, "INTERNAL_SERVICE_SECRET", "")
+    if not expected_secret or not secret or not hmac.compare_digest(secret, expected_secret):
         return JsonResponse(
             {"valid": False, "error": "Unauthorized internal service call."},
             status=403,
@@ -457,6 +458,11 @@ def verify_key_internal_view(request):
             },
             status=403,
         )
+
+    # Atomically record usage and timestamp on successful verification
+    key_obj.last_used_at = timezone.now()
+    key_obj.total_requests = F("total_requests") + 1
+    key_obj.save(update_fields=["last_used_at", "total_requests"])
 
     return JsonResponse(
         {
