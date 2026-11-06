@@ -172,3 +172,11 @@ class TestPublicAndShowcaseViews:
             == "whitenoise.storage.CompressedManifestStaticFilesStorage"
         )
         assert "default" in settings.STORAGES
+
+    def test_tailwind_cdn_documented_with_todo(self):
+        from pathlib import Path
+        base_html = (Path(__file__).resolve().parent.parent / "templates" / "base.html").read_text(encoding="utf-8")
+        readme = (Path(__file__).resolve().parent.parent / "README.md").read_text(encoding="utf-8")
+        assert "TODO" in base_html
+        assert "AOT" in base_html or "WhiteNoise" in base_html
+        assert "Tailwind Asset Strategy" in readme

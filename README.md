@@ -130,6 +130,14 @@ Visit:
 
 ---
 
+## 🎨 Frontend Styling & Tailwind Asset Strategy
+
+* **Current Implementation:** Utilizes Tailwind CSS JIT via the official CDN runtime script in `templates/base.html`, complemented by custom CSS in `static/css/styles.css`.
+* **Rationale:** Keeps the application purely Python-based (orchestrated with `uv`) without adding a Node.js/npm dependency to Render's lightweight build environment.
+* **TODO:** Transition to an ahead-of-time (AOT) precompiled CSS bundle using the standalone `tailwindcss` binary or a GitHub Actions build step. Compiled static assets will be served directly by WhiteNoise (`CompressedManifestStaticFilesStorage`) to eliminate the runtime CDN dependency.
+
+---
+
 ## ☁️ Deploying to Render
 
 A turnkey `render.yaml` blueprint is included:
