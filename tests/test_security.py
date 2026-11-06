@@ -350,3 +350,12 @@ def test_production_missing_secrets_raises_improperly_configured(monkeypatch):
     monkeypatch.setenv("DJANGO_SECRET_KEY", "django-insecure-test")
     monkeypatch.setenv("INTERNAL_SERVICE_SECRET", "cricpulse-internal-secret-2026")
     importlib.reload(config.settings)
+
+
+def test_render_yaml_allowed_hosts_tightened():
+    from pathlib import Path
+    render_yaml_path = Path(__file__).resolve().parent.parent / "render.yaml"
+    content = render_yaml_path.read_text(encoding="utf-8")
+    assert "cricpulse-portal.onrender.com" in content
+    # Wildcard .onrender.com must not be present in ALLOWED_HOSTS
+    assert 'value: ".onrender.com' not in content

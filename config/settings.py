@@ -37,7 +37,7 @@ else:
         "cricpulse-internal-secret-2026",
     )
 
-allowed_hosts_str = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0,.onrender.com")
+allowed_hosts_str = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0,cricpulse-portal.onrender.com")
 ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_str.split(",") if h.strip()]
 
 # Number of trusted reverse proxies in front of Django (Render uses 1)

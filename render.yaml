@@ -20,8 +20,10 @@ services:
         generateValue: true
       - key: SENTRY_DSN
         sync: false
+      # ALLOWED_HOSTS: Restrict to exact Render hostname and local loopbacks for production security.
+      # To attach a custom domain (e.g., portal.cricpulse.com), append it to this comma-separated list.
       - key: ALLOWED_HOSTS
-        value: ".onrender.com,localhost,127.0.0.1"
+        value: "cricpulse-portal.onrender.com,localhost,127.0.0.1"
       - key: CRICPULSE_ENGINE_URL
         value: "https://cricpulse-engine.onrender.com"
       - key: DATABASE_URL
