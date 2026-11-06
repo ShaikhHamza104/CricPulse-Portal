@@ -16,6 +16,12 @@ class TestPublicAndShowcaseViews:
         assert "CricPulse" in content
         assert "IPL Analytics" in content
 
+    def test_healthz_endpoint_returns_ok_without_db(self, client):
+        resp = client.get("/healthz")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "ok"
+        assert resp.json()["service"] == "cricpulse-portal"
+
     @patch("httpx.Client.get")
     def test_home_page_caches_engine_health(self, mock_get, client):
         from django.core.cache import cache

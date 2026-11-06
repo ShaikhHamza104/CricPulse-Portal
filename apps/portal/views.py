@@ -618,3 +618,11 @@ print(resp.json())
 ```
 """
     return HttpResponse(content.strip(), content_type="text/plain; charset=utf-8")
+
+
+def healthz_view(request):
+    """
+    Lightweight liveness probe for load balancers, orchestrators, and keep-alive monitors.
+    Does not query the database or external services.
+    """
+    return JsonResponse({"status": "ok", "service": "cricpulse-portal"}, status=200)

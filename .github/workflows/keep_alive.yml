@@ -15,4 +15,6 @@ jobs:
         run: |
           echo "Pinging CricPulse Engine..."
           curl -s -o /dev/null -w "Engine: HTTP %{http_code} (%{time_total}s)\n" https://cricpulse-engine.onrender.com/health || true
+          echo "Pinging CricPulse Portal..."
+          curl -s -o /dev/null -w "Portal: HTTP %{http_code} (%{time_total}s)\n" https://cricpulse-portal.onrender.com/healthz || true
           echo "Heartbeat completed."
