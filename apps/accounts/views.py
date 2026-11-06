@@ -37,7 +37,7 @@ def signup_view(request):
             # Track signup attempt
             cache.set(signup_throttle_key, signup_count + 1, timeout=SIGNUP_WINDOW_SECONDS)
             user = form.save()
-            login(request, user)
+            login(request, user, backend="apps.accounts.backends.EmailOrUsernameBackend")
             messages.success(
                 request,
                 f"Welcome to CricPulse, {user.username}! Your Developer API key has been automatically generated below.",

@@ -8,7 +8,7 @@ services:
   - type: web
     name: cricpulse-portal
     runtime: python
-    buildCommand: uv sync && uv run python manage.py collectstatic --noinput && uv run python manage.py migrate
+    buildCommand: uv sync && uv run python manage.py collectstatic --noinput && uv run python manage.py migrate && uv run python manage.py ensure_superuser
     startCommand: uv run gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4
     plan: free
     envVars:
@@ -19,6 +19,12 @@ services:
       - key: INTERNAL_SERVICE_SECRET
         generateValue: true
       - key: SENTRY_DSN
+        sync: false
+      - key: DJANGO_SUPERUSER_USERNAME
+        value: "cricpulse@admin.com"
+      - key: DJANGO_SUPERUSER_EMAIL
+        value: "kmohdhamza10@gmail.com"
+      - key: DJANGO_SUPERUSER_PASSWORD
         sync: false
       # ALLOWED_HOSTS: Restrict to exact Render hostname and local loopbacks for production security.
       # To attach a custom domain (e.g., portal.cricpulse.com), append it to this comma-separated list.

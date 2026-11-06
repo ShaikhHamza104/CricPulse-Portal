@@ -207,3 +207,42 @@ class TestAuthenticationFlows:
         )
         assert resp_429.status_code == 429
         assert "Too many account creation attempts" in resp_429.content.decode()
+
+    def test_login_with_email_or_username(self, client):
+        User.objects.create_user(
+            username="portal_admin",
+            email="portal_admin@cricpulse.io",
+            password="MySecretPassword123!",
+        )
+
+        # Login with email
+        resp_email = client.post(
+            reverse("accounts:login"),
+            {"username": "portal_admin@cricpulse.io", "password": "MySecretPassword123!"},
+            follow=True,
+        )
+        assert resp_email.status_code == 200
+        assert resp_email.context["user"].is_authenticated
+        assert resp_email.context["user"].username == "portal_admin"
+        client.logout()
+
+        # Login with username
+        resp_user = client.post(
+            reverse("accounts:login"),
+            {"username": "portal_admin", "password": "MySecretPassword123!"},
+            follow=True,
+        )
+        assert resp_user.status_code == 200
+        assert resp_user.context["user"].is_authenticated
+        assert resp_user.context["user"].username == "portal_admin"
+
+    def test_ensure_superuser_command(self):
+        from django.core.management import call_command
+        import os
+
+        call_command("ensure_superuser")
+        admin_user = User.objects.filter(username="cricpulse@admin.com").first()
+        assert admin_user is not None
+        assert admin_user.is_superuser is True
+        assert admin_user.is_staff is True
+        assert admin_user.check_password("root@123") is True

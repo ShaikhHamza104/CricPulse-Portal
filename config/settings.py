@@ -196,6 +196,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Authentication backend (supports login via username or email address)
+AUTHENTICATION_BACKENDS = [
+    "apps.accounts.backends.EmailOrUsernameBackend",
+]
+
 # Authentication redirection
 LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "portal:dashboard"
