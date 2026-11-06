@@ -100,3 +100,25 @@ class TestPublicAndShowcaseViews:
         assert data["status_code"] == 200
         assert data["process_time"] == "0.0120s"
         assert data["data"]["status"] == "ok"
+
+    def test_dashboard_displays_enterprise_rate_limit_for_admin(self, client):
+        admin_user = User.objects.create_superuser(
+            username="test_admin_rate@cricpulse.io",
+            email="admin_rate@cricpulse.io",
+            password="pass",
+        )
+        from apps.portal.models import APIKey
+        APIKey.objects.create(
+            user=admin_user,
+            name="Admin Key",
+            tier="enterprise",
+            rate_limit_per_minute=1200,
+        )
+
+        client.force_login(admin_user)
+        dashboard_url = reverse("portal:dashboard")
+        resp = client.get(dashboard_url)
+        assert resp.status_code == 200
+        content = resp.content.decode()
+        assert "1200 req/min" in content
+        assert "Enterprise" in content

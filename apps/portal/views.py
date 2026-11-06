@@ -63,7 +63,23 @@ def dashboard_view(request):
     and a live API testing console.
     """
     keys = request.user.api_keys.all()
-    primary_key = keys.filter(is_active=True).first()
+    active_keys = keys.filter(is_active=True)
+    primary_key = active_keys.first()
+    active_keys_count = active_keys.count()
+
+    # Determine dynamic tier label and rate limit based on credentials or admin status
+    if primary_key:
+        tier_label = primary_key.get_tier_display()
+        tier_code = primary_key.tier
+        rate_limit_display = f"{primary_key.rate_limit_per_minute} req/min"
+    elif request.user.is_staff or request.user.is_superuser:
+        tier_label = "Enterprise Tier"
+        tier_code = "enterprise"
+        rate_limit_display = "1200 req/min"
+    else:
+        tier_label = "Developer Free"
+        tier_code = "free"
+        rate_limit_display = "60 req/min"
 
     engine_url = getattr(
         settings, "CRICPULSE_ENGINE_URL", "https://cricpulse-engine.onrender.com"
@@ -169,7 +185,10 @@ class Program {{
     context = {
         "keys": keys,
         "primary_key": primary_key,
-        "active_keys_count": keys.filter(is_active=True).count(),
+        "active_keys_count": active_keys_count,
+        "tier_label": tier_label,
+        "tier_code": tier_code,
+        "rate_limit_display": rate_limit_display,
         "max_keys_limit": MAX_ACTIVE_KEYS_PER_USER,
         "snippets": snippets,
         "engine_url": engine_url,

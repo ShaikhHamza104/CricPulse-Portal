@@ -10,7 +10,9 @@
     <div>
       <div class="flex items-center space-x-2">
         <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Developer Dashboard</h1>
-        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Free Tier</span>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold {% if tier_code == 'enterprise' or user.is_staff %}bg-purple-100 text-purple-800 border border-purple-200{% elif tier_code == 'pro' %}bg-sky-100 text-sky-800 border border-sky-200{% else %}bg-emerald-100 text-emerald-800 border border-emerald-200{% endif %}">
+          {{ tier_label|default:"Free Tier" }}
+        </span>
       </div>
       <p class="text-sm text-slate-500 mt-1">
         Manage your CricPulse API credentials, monitor quotas, and test analytical endpoints live.
@@ -38,8 +40,10 @@
 
     <div class="card-crisp p-5">
       <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Current Rate Limit</div>
-      <div class="text-3xl font-extrabold text-emerald-600 mt-1">60 req/min</div>
-      <div class="text-xs text-slate-500 mt-1">Enforced per IP / credential token</div>
+      <div class="text-3xl font-extrabold {% if tier_code == 'enterprise' or user.is_staff %}text-purple-600{% elif tier_code == 'pro' %}text-sky-600{% else %}text-emerald-600{% endif %} mt-1">
+        {{ rate_limit_display|default:"60 req/min" }}
+      </div>
+      <div class="text-xs text-slate-500 mt-1">Enforced per active credential token</div>
     </div>
 
     <div class="card-crisp p-5">
