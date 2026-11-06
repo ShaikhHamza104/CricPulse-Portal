@@ -1,0 +1,62 @@
+# CricPulse IPL Analytics API
+
+> High-performance columnar cricket analytics platform powered by FastAPI and DuckDB across 16+ seasons of IPL history (2008-2024).
+
+## System Architecture
+- Analytics Engine: https://cricpulse-engine.onrender.com
+- Developer Web Portal: https://cricpulse-portal.onrender.com
+- OpenAPI Specification: https://cricpulse-engine.onrender.com/openapi.json
+- Health Probe: https://cricpulse-engine.onrender.com/health
+
+## Authentication
+Every request to analytical routes (/api/v1/*) must include your secret API key:
+`X-API-Key: cric_live_<48_hex_digits>`
+
+## Endpoints Catalog
+
+### 1. Head-to-Head Rivalry
+`GET /api/v1/analytics/head-to-head?team1=CSK&team2=RCB`
+- Query Params: `team1` (string, required), `team2` (string, required)
+- Supports franchise aliases: CSK, MI, RCB, KKR, SRH, DC, RR, PBKS, GT, LSG
+- Response: { "team1": "...", "team2": "...", "total_matches": 35, "team1_wins": 21, "team2_wins": 14, "win_percentage_team1": 60.0, "win_percentage_team2": 40.0 }
+
+### 2. Orange Cap (Top Run-Scorers)
+`GET /api/v1/analytics/orange-cap?season=2024&limit=10`
+- Query Params: `season` (int, optional, e.g. 2024), `limit` (int, default 10)
+- Excludes super overs and wide deliveries from balls faced.
+
+### 3. Purple Cap (Top Wicket-Takers)
+`GET /api/v1/analytics/purple-cap?season=2024&limit=10`
+- Query Params: `season` (int, optional, e.g. 2024), `limit` (int, default 10)
+- Credits only bowler-attributed dismissals; displays overs in official decimal format.
+
+### 4. Stadium Par Score
+`GET /api/v1/analytics/venue?venue=Wankhede`
+- Query Params: `venue` (string, required)
+- Calculated strictly on completed innings (>= 19 overs or 10 wickets).
+
+### 5. Player Career Profile & Search
+`GET /api/v1/players?search=Kohli`
+`GET /api/v1/players/{player_id}`
+
+### 6. Matches
+`GET /api/v1/matches?season=2024&limit=20`
+`GET /api/v1/matches/seasons`
+
+## Code Example (cURL)
+```bash
+curl -X GET "https://cricpulse-engine.onrender.com/api/v1/analytics/head-to-head?team1=CSK&team2=RCB" \
+     -H "X-API-Key: cric_live_YOUR_KEY" \
+     -H "Accept: application/json"
+```
+
+## Code Example (Python)
+```python
+import httpx
+resp = httpx.get(
+    "https://cricpulse-engine.onrender.com/api/v1/analytics/head-to-head",
+    headers={"X-API-Key": "cric_live_YOUR_KEY"},
+    params={"team1": "CSK", "team2": "RCB"}
+)
+print(resp.json())
+```

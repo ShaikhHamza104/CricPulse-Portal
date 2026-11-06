@@ -3,7 +3,7 @@ import httpx
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from .models import APIKey
@@ -396,3 +396,131 @@ def verify_key_internal_view(request):
             "username": key_obj.user.username,
         }
     )
+
+
+def robots_txt_view(request):
+    """
+    AI-Agent Friendly robots.txt.
+    Welcomes modern AI web crawlers and autonomous agents (GPTBot, ClaudeBot,
+    Google-Extended, PerplexityBot, etc.) while safeguarding administrative endpoints.
+    """
+    engine_url = getattr(
+        settings, "CRICPULSE_ENGINE_URL", "https://cricpulse-engine.onrender.com"
+    )
+    content = f"""# CricPulse Developer Platform - robots.txt
+# AI-Agent Friendly standard for Search Engines, Autonomous Agents, and LLMs
+
+# 1. Autonomous AI Agents & LLM Crawlers (Explicitly Allowed)
+User-agent: GPTBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: anthropic-ai
+User-agent: Google-Extended
+User-agent: GoogleOther
+User-agent: PerplexityBot
+User-agent: Applebot-Extended
+User-agent: cohere-ai
+User-agent: Amazonbot
+User-agent: Meta-ExternalAgent
+User-agent: CCBot
+Allow: /
+Allow: /docs/
+Allow: /analytics/
+Allow: /llms.txt
+Allow: /llms-full.txt
+
+# 2. General Web Crawlers
+User-agent: *
+Allow: /
+Allow: /docs/
+Allow: /analytics/
+Allow: /llms.txt
+
+# 3. Disallowed Administrative, Proxy, and Private Endpoints
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /accounts/
+Disallow: /keys/
+Disallow: /api/internal/
+Disallow: /analytics/proxy/
+
+# 4. Machine-Readable Context for AI Agents
+# Standard context specification: https://cricpulse-portal.onrender.com/llms.txt
+# Interactive API documentation: {engine_url}/docs
+# OpenAPI 3.1 JSON Schema: {engine_url}/openapi.json
+"""
+    return HttpResponse(content.strip(), content_type="text/plain; charset=utf-8")
+
+
+def llms_txt_view(request):
+    """
+    llms.txt specification for AI Agents (ChatGPT, Claude, Gemini, Cursor, Copilot).
+    Provides structured, markdown documentation optimized for autonomous consumption.
+    """
+    engine_url = getattr(
+        settings, "CRICPULSE_ENGINE_URL", "https://cricpulse-engine.onrender.com"
+    )
+    content = f"""# CricPulse IPL Analytics API
+
+> High-performance columnar cricket analytics platform powered by FastAPI and DuckDB across 16+ seasons of IPL history (2008-2024).
+
+## System Architecture
+- Analytics Engine: {engine_url}
+- Developer Web Portal: https://cricpulse-portal.onrender.com
+- OpenAPI Specification: {engine_url}/openapi.json
+- Health Probe: {engine_url}/health
+
+## Authentication
+Every request to analytical routes (/api/v1/*) must include your secret API key:
+`X-API-Key: cric_live_<48_hex_digits>`
+
+## Endpoints Catalog
+
+### 1. Head-to-Head Rivalry
+`GET /api/v1/analytics/head-to-head?team1=CSK&team2=RCB`
+- Query Params: `team1` (string, required), `team2` (string, required)
+- Supports franchise aliases: CSK, MI, RCB, KKR, SRH, DC, RR, PBKS, GT, LSG
+- Response: `{{ "team1": "...", "team2": "...", "total_matches": 35, "team1_wins": 21, "team2_wins": 14, "win_percentage_team1": 60.0, "win_percentage_team2": 40.0 }}`
+
+### 2. Orange Cap (Top Run-Scorers)
+`GET /api/v1/analytics/orange-cap?season=2024&limit=10`
+- Query Params: `season` (int, optional, e.g. 2024), `limit` (int, default 10)
+- Excludes super overs and wide deliveries from balls faced.
+
+### 3. Purple Cap (Top Wicket-Takers)
+`GET /api/v1/analytics/purple-cap?season=2024&limit=10`
+- Query Params: `season` (int, optional, e.g. 2024), `limit` (int, default 10)
+- Credits only bowler-attributed dismissals; displays overs in official decimal format.
+
+### 4. Stadium Par Score
+`GET /api/v1/analytics/venue?venue=Wankhede`
+- Query Params: `venue` (string, required)
+- Calculated strictly on completed innings (>= 19 overs or 10 wickets).
+
+### 5. Player Career Profile & Search
+`GET /api/v1/players?search=Kohli`
+`GET /api/v1/players/{{player_id}}`
+
+### 6. Matches
+`GET /api/v1/matches?season=2024&limit=20`
+`GET /api/v1/matches/seasons`
+
+## Code Example (cURL)
+```bash
+curl -X GET "{engine_url}/api/v1/analytics/head-to-head?team1=CSK&team2=RCB" \\
+     -H "X-API-Key: cric_live_YOUR_KEY" \\
+     -H "Accept: application/json"
+```
+
+## Code Example (Python)
+```python
+import httpx
+resp = httpx.get(
+    "{engine_url}/api/v1/analytics/head-to-head",
+    headers={{"X-API-Key": "cric_live_YOUR_KEY"}},
+    params={{"team1": "CSK", "team2": "RCB"}}
+)
+print(resp.json())
+```
+"""
+    return HttpResponse(content.strip(), content_type="text/plain; charset=utf-8")
