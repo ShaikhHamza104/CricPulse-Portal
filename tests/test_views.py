@@ -133,3 +133,12 @@ class TestPublicAndShowcaseViews:
         content = resp.content.decode()
         assert "1200 req/min" in content
         assert "Enterprise" in content
+
+    def test_storages_configuration_uses_whitenoise(self):
+        from django.conf import settings
+        assert "staticfiles" in settings.STORAGES
+        assert (
+            settings.STORAGES["staticfiles"]["BACKEND"]
+            == "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        )
+        assert "default" in settings.STORAGES
