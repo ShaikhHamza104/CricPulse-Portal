@@ -3,6 +3,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 from .forms import LoginForm, ProfileUpdateForm, RegisterForm
 
 
@@ -58,12 +59,13 @@ def login_view(request):
     return render(request, "accounts/login.html", {"form": form})
 
 
-@login_required
+@require_POST
 def logout_view(request):
-    """Terminate the current session securely."""
-    username = request.user.username
+    """Terminate the current session securely via POST to prevent CSRF logout attacks."""
+    username = request.user.username if request.user.is_authenticated else ""
     logout(request)
-    messages.info(request, f"You have been signed out, {username}. See you next time!")
+    if username:
+        messages.info(request, f"You have been signed out, {username}. See you next time!")
     return redirect("portal:home")
 
 

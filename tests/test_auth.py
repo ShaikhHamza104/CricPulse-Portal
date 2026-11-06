@@ -63,10 +63,15 @@ class TestAuthenticationFlows:
         assert login_resp.status_code == 200
         assert "_auth_user_id" in client.session
 
-        # Logout
+        # Logout: GET is rejected with 405 Method Not Allowed and user stays logged in
         logout_url = reverse("accounts:logout")
-        logout_resp = client.get(logout_url, follow=True)
-        assert logout_resp.status_code == 200
+        get_logout_resp = client.get(logout_url)
+        assert get_logout_resp.status_code == 405
+        assert "_auth_user_id" in client.session
+
+        # Logout: POST succeeds and logs out
+        post_logout_resp = client.post(logout_url, follow=True)
+        assert post_logout_resp.status_code == 200
         assert "_auth_user_id" not in client.session
 
     def test_profile_update(self, client):

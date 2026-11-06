@@ -103,9 +103,12 @@
               </a>
             </div>
 
-            <a href="{% url 'accounts:logout' %}" class="text-sm font-medium text-slate-500 hover:text-slate-800 transition">
-              Sign Out
-            </a>
+            <form method="post" action="{% url 'accounts:logout' %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="text-sm font-medium text-slate-500 hover:text-slate-800 transition cursor-pointer">
+                Sign Out
+              </button>
+            </form>
           {% else %}
             <a href="{% url 'accounts:login' %}" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition">
               Sign In
@@ -144,7 +147,12 @@
           {% endif %}
           <a href="{% url 'portal:dashboard' %}" class="block px-3 py-2 rounded-md text-base font-medium text-emerald-700 bg-emerald-50">My API Keys</a>
           <a href="{% url 'accounts:profile' %}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">Profile Settings</a>
-          <a href="{% url 'accounts:logout' %}" class="block px-3 py-2 rounded-md text-base font-medium text-rose-600 hover:bg-rose-50">Sign Out</a>
+          <form method="post" action="{% url 'accounts:logout' %}" class="block">
+            {% csrf_token %}
+            <button type="submit" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-rose-600 hover:bg-rose-50 cursor-pointer transition">
+              Sign Out
+            </button>
+          </form>
         {% else %}
           <a href="{% url 'accounts:login' %}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">Sign In</a>
           <a href="{% url 'accounts:signup' %}" class="block px-3 py-2 rounded-md text-base font-medium text-center bg-emerald-600 text-white rounded-lg">Get Free API Key</a>
