@@ -4,6 +4,7 @@ import httpx
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.db.models import F
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -17,36 +18,42 @@ logger = logging.getLogger(__name__)
 def home_view(request):
     """
     Public landing page showcase.
-    Pings the live CricPulse-Engine backend health endpoint to display live system status.
+    Pings the live CricPulse-Engine backend health endpoint to display live system status,
+    cached for 30 seconds to prevent blocking requests.
     """
     engine_url = getattr(
         settings, "CRICPULSE_ENGINE_URL", "https://cricpulse-engine.onrender.com"
     )
-    health_status = {"online": False, "latency_ms": None, "status_text": "Checking..."}
 
-    try:
-        with httpx.Client(timeout=2.5) as client:
-            resp = client.get(f"{engine_url}/health")
-            if resp.status_code == 200:
-                # Capture latency header if present
-                latency_header = resp.headers.get("X-Process-Time")
-                latency_display = latency_header if latency_header else "24ms"
-                health_status = {
-                    "online": True,
-                    "latency": latency_display,
-                    "status_text": "Operational",
-                }
-            else:
-                health_status = {
-                    "online": False,
-                    "status_text": f"HTTP {resp.status_code}",
-                }
-    except Exception as exc:
-        logger.warning(f"Engine health ping notice: {exc}")
-        health_status = {
-            "online": False,
-            "status_text": "Warming Up / Sleeping",
-        }
+    cache_key = "engine_health_status"
+    health_status = cache.get(cache_key)
+
+    if health_status is None:
+        health_status = {"online": False, "latency_ms": None, "status_text": "Checking..."}
+        try:
+            with httpx.Client(timeout=2.5) as client:
+                resp = client.get(f"{engine_url}/health")
+                if resp.status_code == 200:
+                    # Capture latency header if present
+                    latency_header = resp.headers.get("X-Process-Time")
+                    latency_display = latency_header if latency_header else "24ms"
+                    health_status = {
+                        "online": True,
+                        "latency": latency_display,
+                        "status_text": "Operational",
+                    }
+                else:
+                    health_status = {
+                        "online": False,
+                        "status_text": f"HTTP {resp.status_code}",
+                    }
+        except Exception as exc:
+            logger.warning(f"Engine health ping notice: {exc}")
+            health_status = {
+                "online": False,
+                "status_text": "Warming Up / Sleeping",
+            }
+        cache.set(cache_key, health_status, timeout=30)
 
     context = {
         "health": health_status,

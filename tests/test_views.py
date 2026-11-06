@@ -16,6 +16,30 @@ class TestPublicAndShowcaseViews:
         assert "CricPulse" in content
         assert "IPL Analytics" in content
 
+    @patch("httpx.Client.get")
+    def test_home_page_caches_engine_health(self, mock_get, client):
+        from django.core.cache import cache
+        cache.clear()
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.headers = {"X-Process-Time": "12ms"}
+        mock_get.return_value = mock_resp
+
+        home_url = reverse("portal:home")
+
+        # First request performs the health ping and populates cache
+        resp1 = client.get(home_url)
+        assert resp1.status_code == 200
+        assert mock_get.call_count == 1
+        assert "12ms" in resp1.content.decode()
+
+        # Second request must use cached health status without making another network call
+        resp2 = client.get(home_url)
+        assert resp2.status_code == 200
+        assert mock_get.call_count == 1
+        assert "12ms" in resp2.content.decode()
+
     def test_docs_page_renders_successfully(self, client):
         docs_url = reverse("portal:docs")
         response = client.get(docs_url)
