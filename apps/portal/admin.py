@@ -17,8 +17,8 @@ class APIKeyAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = ("is_active", "tier", "created_at")
-    search_fields = ("user__username", "user__email", "key", "name")
-    readonly_fields = ("created_at", "last_used_at", "revoked_at", "total_requests")
+    search_fields = ("user__username", "user__email", "hashed_key", "prefix", "last4", "name")
+    readonly_fields = ("created_at", "last_used_at", "revoked_at", "total_requests", "hashed_key", "prefix", "last4")
     actions = ["revoke_keys", "activate_keys"]
 
     @admin.display(description="API Key")

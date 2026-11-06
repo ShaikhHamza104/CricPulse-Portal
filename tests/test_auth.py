@@ -27,7 +27,8 @@ class TestAuthenticationFlows:
         # Verify automatic API Key provisioned by signal
         api_key = user.api_keys.first()
         assert api_key is not None
-        assert api_key.key.startswith("cric_live_")
+        assert api_key.masked_key.startswith("cric_live_")
+        assert len(api_key.hashed_key) == 64
         assert api_key.is_active is True
         assert api_key.tier == "free"
 

@@ -259,6 +259,40 @@ def test_internal_verify_key_revoked_key_rejected(client, django_user_model):
     assert data["reason"] == "revoked"
 
 
+def test_internal_verify_key_hashes_input_and_looks_up_by_hash(client, django_user_model):
+    from apps.portal.models import APIKey
+    user = django_user_model.objects.create_user(username="hash_test_user", password="Password123!")
+    key_obj = APIKey.objects.create(user=user, name="Hashed Key Test")
+    raw_key = key_obj.key
+    assert raw_key is not None
+
+    # Reload from DB: plaintext key must NOT be stored
+    key_obj.refresh_from_db()
+    assert key_obj.key is None
+    assert len(key_obj.hashed_key) == 64
+
+    verify_url = reverse("portal:internal_verify_key")
+
+    # Correct raw key hashes to match stored hash
+    resp = client.get(
+        verify_url,
+        {"key": raw_key},
+        HTTP_X_INTERNAL_SECRET="cricpulse-internal-secret-2026",
+    )
+    assert resp.status_code == 200
+    assert resp.json()["valid"] is True
+
+    # Tampered raw key results in 404 key_not_found
+    tampered_key = raw_key[:-4] + "ffff"
+    tampered_resp = client.get(
+        verify_url,
+        {"key": tampered_key},
+        HTTP_X_INTERNAL_SECRET="cricpulse-internal-secret-2026",
+    )
+    assert tampered_resp.status_code == 404
+    assert tampered_resp.json()["reason"] == "key_not_found"
+
+
 def test_production_missing_secrets_raises_improperly_configured(monkeypatch):
     import importlib
     from django.core.exceptions import ImproperlyConfigured

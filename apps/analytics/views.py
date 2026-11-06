@@ -271,12 +271,9 @@ def live_query_proxy(request):
         settings, "CRICPULSE_ENGINE_URL", "https://cricpulse-engine.onrender.com"
     )
 
-    # Resolve API Key from request header or authenticated user's active key
+    # Pass along client's X-API-Key header if provided by caller/workbench
+    # (Server no longer stores or injects plaintext keys)
     api_key = request.headers.get("X-API-Key")
-    if not api_key and request.user.is_authenticated:
-        active_key_obj = request.user.api_keys.filter(is_active=True).first()
-        if active_key_obj:
-            api_key = active_key_obj.key
 
     headers = {
         "User-Agent": "CricPulse-Portal-Workbench/1.0",

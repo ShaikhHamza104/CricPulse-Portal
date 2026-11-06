@@ -4,10 +4,18 @@ from django.db import models
 from django.utils import timezone
 
 
+import hashlib
+import secrets
+from django.conf import settings
+from django.db import models
+from django.utils import timezone
+
+
 class APIKey(models.Model):
     """
     Cryptographically secure API Key issued to a registered developer.
     Enables access to CricPulse-Engine analytical endpoints.
+    Keys are stored as SHA-256 hashes for zero-leak security.
     """
 
     TIER_CHOICES = [
@@ -26,11 +34,21 @@ class APIKey(models.Model):
         default="Default Production Key",
         help_text="A friendly label to identify this key.",
     )
-    key = models.CharField(
-        max_length=80,
+    hashed_key = models.CharField(
+        max_length=64,
         unique=True,
         db_index=True,
-        help_text="Unique secret key (cric_live_...)",
+        help_text="SHA-256 cryptographic hash of the API key.",
+    )
+    prefix = models.CharField(
+        max_length=16,
+        default="cric_live_",
+        help_text="Display prefix (e.g. cric_live_).",
+    )
+    last4 = models.CharField(
+        max_length=4,
+        default="",
+        help_text="Last 4 characters of the key for identification.",
     )
     tier = models.CharField(
         max_length=20,
@@ -53,6 +71,9 @@ class APIKey(models.Model):
     last_used_at = models.DateTimeField(null=True, blank=True)
     revoked_at = models.DateTimeField(null=True, blank=True)
 
+    # Ephemeral storage for raw key immediately after generation (not persisted)
+    _raw_key: str | None = None
+
     class Meta:
         verbose_name = "API Key"
         verbose_name_plural = "API Keys"
@@ -66,21 +87,46 @@ class APIKey(models.Model):
         """Generate a cryptographically secure 24-byte hex token with a domain prefix."""
         return f"cric_live_{secrets.token_hex(24)}"
 
+    @staticmethod
+    def hash_key(raw_token: str) -> str:
+        """Calculate the SHA-256 hex digest of a raw token."""
+        return hashlib.sha256(raw_token.strip().encode("utf-8")).hexdigest()
+
+    @property
+    def key(self) -> str | None:
+        """
+        Plaintext key is ephemeral and only available in memory immediately
+        after generation in the current session.
+        """
+        return self._raw_key
+
+    @key.setter
+    def key(self, raw_val: str):
+        if raw_val:
+            self._raw_key = raw_val
+            self.hashed_key = self.hash_key(raw_val)
+            self.prefix = raw_val[:10] if len(raw_val) >= 10 else "cric_live_"
+            self.last4 = raw_val[-4:] if len(raw_val) >= 4 else ""
+
     def save(self, *args, **kwargs):
-        if not self.key:
-            self.key = self.generate_secret()
+        if not self.hashed_key:
+            raw = self.generate_secret()
+            self._raw_key = raw
+            self.hashed_key = self.hash_key(raw)
+            self.prefix = raw[:10]
+            self.last4 = raw[-4:]
         super().save(*args, **kwargs)
+
+    def refresh_from_db(self, *args, **kwargs):
+        self._raw_key = None
+        super().refresh_from_db(*args, **kwargs)
 
     @property
     def masked_key(self) -> str:
         """Returns masked version for secure display (e.g. cric_live_••••••••3a7b)."""
-        if not self.key:
-            return ""
-        prefix = "cric_live_"
-        raw = self.key.replace(prefix, "")
-        if len(raw) <= 8:
-            return self.key
-        return f"{prefix}{'•' * 16}{raw[-4:]}"
+        pfx = self.prefix or "cric_live_"
+        l4 = self.last4 or ""
+        return f"{pfx}{'•' * 16}{l4}"
 
     def revoke(self):
         """Immediately revoke this API key."""

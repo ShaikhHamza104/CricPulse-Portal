@@ -141,8 +141,12 @@ def dashboard_view(request):
         settings, "CRICPULSE_ENGINE_URL", "https://cricpulse-engine.onrender.com"
     )
 
-    # Prepare ready-to-run code snippets pre-filled with the user's real key
-    active_key_str = primary_key.key if primary_key else "cric_live_YOUR_KEY_HERE"
+    # Stored keys are hashed (SHA-256) at rest and cannot be retrieved in plaintext.
+    # Code quickstarts use a standard placeholder token.
+    active_key_str = "cric_live_YOUR_API_KEY"
+
+    # Pop one-time flashed raw key from session if a key was just generated
+    newly_created_key = request.session.pop("newly_created_key", None)
 
     snippets = {
         "curl": f'curl -X GET "{engine_url}/api/v1/analytics/head-to-head?team1=CSK&team2=RCB" \\\n     -H "X-API-Key: {active_key_str}"',
@@ -241,6 +245,7 @@ class Program {{
     context = {
         "keys": keys,
         "primary_key": primary_key,
+        "newly_created_key": newly_created_key,
         "active_keys_count": active_keys_count,
         "tier_label": tier_label,
         "tier_code": tier_code,
@@ -272,8 +277,16 @@ def create_key_view(request):
         tier="free",
         rate_limit_per_minute=60,
     )
+    raw_key = key_obj.key
+    if raw_key:
+        request.session["newly_created_key"] = {
+            "name": key_obj.name,
+            "raw_key": raw_key,
+            "masked_key": key_obj.masked_key,
+        }
     messages.success(
-        request, f"New API key '{key_obj.name}' generated successfully ({key_obj.masked_key})."
+        request,
+        f"New API key '{key_obj.name}' generated successfully ({key_obj.masked_key}). Copy your key below — for security, it will never be displayed again."
     )
     return redirect("portal:dashboard")
 
@@ -298,13 +311,8 @@ def docs_view(request):
     engine_url = getattr(
         settings, "CRICPULSE_ENGINE_URL", "https://cricpulse-engine.onrender.com"
     )
-    user_key = None
-    if request.user.is_authenticated:
-        active_key = request.user.api_keys.filter(is_active=True).first()
-        if active_key:
-            user_key = active_key.key
-
-    active_key_str = user_key or "cric_live_YOUR_API_KEY"
+    # Stored keys are hashed (SHA-256) at rest for security; docs quickstarts use standard placeholder.
+    active_key_str = "cric_live_YOUR_API_KEY"
 
     snippets = {
         "curl": f'curl -X GET "{engine_url}/api/v1/analytics/head-to-head?team1=CSK&team2=RCB" \\\n     -H "X-API-Key: {active_key_str}"',
@@ -431,7 +439,8 @@ def verify_key_internal_view(request):
             status=400,
         )
 
-    key_obj = APIKey.objects.select_related("user").filter(key=key_str).first()
+    hashed_input = APIKey.hash_key(key_str)
+    key_obj = APIKey.objects.select_related("user").filter(hashed_key=hashed_input).first()
     if not key_obj:
         return JsonResponse(
             {
