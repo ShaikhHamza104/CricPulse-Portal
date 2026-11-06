@@ -24,6 +24,17 @@ class TestPublicAndShowcaseViews:
         assert "Developer Documentation" in content
         assert "/api/v1/analytics/head-to-head" in content
 
+    def test_pricing_page_renders_successfully(self, client):
+        pricing_url = reverse("portal:pricing")
+        response = client.get(pricing_url)
+        assert response.status_code == 200
+        content = response.content.decode()
+        assert "Predictable plans" in content
+        assert "Developer Free" in content
+        assert "Pro Tier" in content
+        assert "Enterprise Scale" in content
+        assert "Full Plan Comparison Matrix" in content
+
     @patch("apps.analytics.views.get_engine_client")
     def test_analytics_showcase_tabs_render_without_crash(self, mock_get_client, client):
         mock_client = MagicMock()

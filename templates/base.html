@@ -67,6 +67,9 @@
           <a href="{% url 'portal:docs' %}" class="px-3 py-2 text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
             Documentation
           </a>
+          <a href="{% url 'portal:pricing' %}" class="px-3 py-2 text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+            Pricing
+          </a>
           <a href="{{ CRICPULSE_ENGINE_URL }}/docs" target="_blank" rel="noopener noreferrer" class="px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition flex items-center space-x-1">
             <span>Swagger UI</span>
             <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,6 +133,7 @@
       <a href="{% url 'portal:home' %}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">Overview</a>
       <a href="{% url 'analytics:showcase' %}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">Cricket Showcase</a>
       <a href="{% url 'portal:docs' %}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">Documentation</a>
+      <a href="{% url 'portal:pricing' %}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">Pricing &amp; Plans</a>
       <a href="{{ CRICPULSE_ENGINE_URL }}/docs" target="_blank" class="block px-3 py-2 rounded-md text-base font-medium text-slate-500 hover:bg-slate-100">Swagger UI ↗</a>
       
       <div class="pt-3 border-t border-slate-200">
@@ -198,6 +202,7 @@
         <div>
           <h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3">Developer Resources</h4>
           <ul class="space-y-2 text-sm text-slate-600">
+            <li><a href="{% url 'portal:pricing' %}" class="hover:text-emerald-600 transition">Pricing &amp; Plans</a></li>
             <li><a href="{% url 'portal:docs' %}" class="hover:text-emerald-600 transition">API Documentation</a></li>
             <li><a href="{% url 'analytics:showcase' %}" class="hover:text-emerald-600 transition">Cricket Analytics Hub</a></li>
             <li><a href="{{ CRICPULSE_ENGINE_URL }}/docs" target="_blank" class="hover:text-emerald-600 transition">Interactive Swagger UI ↗</a></li>

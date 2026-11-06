@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+
+{% block title %}Pricing &amp; Plans — CricPulse Developer Platform{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
+
+  <!-- Header & Hero Section -->
+  <div class="text-center max-w-3xl mx-auto space-y-4">
+    <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+      <span>🏏 Fair, Developer-First Pricing</span>
+    </div>
+    <h1 class="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
+      Predictable plans built to scale with your applications
+    </h1>
+    <p class="text-base sm:text-lg text-slate-600 leading-relaxed">
+      Query 16+ seasons of ball-by-ball IPL match data with sub-30ms latency. Start free forever with instant API key provisioning, then upgrade as your throughput grows.
+    </p>
+
+    <!-- Student & Recruiter Evaluation Banner -->
+    <div class="mt-6 p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-sky-50 border border-emerald-200 text-left flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-start space-x-3">
+        <span class="text-2xl mt-0.5">🎓</span>
+        <div>
+          <h4 class="text-sm font-bold text-slate-900">Academic &amp; Hiring Evaluator Grant</h4>
+          <p class="text-xs text-slate-600 mt-0.5">
+            Evaluating CricPulse for hiring, student research, or a hackathon? We provide complimentary Pro Tier trial access with no credit card required.
+          </p>
+        </div>
+      </div>
+      <button type="button" onclick="openGrantModal()" class="flex-shrink-0 px-4 py-2 rounded-lg text-xs font-bold bg-white text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-300 transition shadow-sm">
+        Activate Grant Access
+      </button>
+    </div>
+
+    <!-- Billing Interval Selector -->
+    <div class="pt-6 flex items-center justify-center space-x-3 text-sm font-medium">
+      <span id="label-monthly" class="text-slate-900 font-semibold">Monthly Billing</span>
+      <button id="billing-toggle" type="button" onclick="toggleBillingInterval()" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-emerald-600 transition-colors duration-200 ease-in-out focus:outline-none" role="switch" aria-checked="false">
+        <span id="billing-switch" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0"></span>
+      </button>
+      <span id="label-annual" class="text-slate-500">Annual Billing</span>
+      <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+        Save 20%
+      </span>
+    </div>
+  </div>
+
+  <!-- Pricing Cards Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+
+    <!-- Card 1: Developer Free -->
+    <div class="card-crisp p-8 flex flex-col justify-between space-y-6 relative border-slate-200 hover:border-slate-300 transition">
+      <div class="space-y-4">
+        <div class="flex justify-between items-center">
+          <h3 class="text-lg font-bold text-slate-900">Developer Free</h3>
+          {% if user_tier == "free" %}
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              Current Plan
+            </span>
+          {% endif %}
+        </div>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          Ideal for hobbyists, student projects, hackathons, and prototyping cricket analytics apps.
+        </p>
+
+        <!-- Price Display -->
+        <div class="pt-2">
+          <div class="flex items-baseline space-x-1">
+            <span class="text-4xl font-extrabold text-slate-900">$0</span>
+            <span class="text-xs text-slate-500 font-medium">/ forever</span>
+          </div>
+          <span class="text-[11px] text-emerald-600 font-semibold block mt-1">No credit card required</span>
+        </div>
+
+        <!-- Features Checklist -->
+        <ul class="pt-4 space-y-3 text-xs text-slate-600 border-t border-slate-100">
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span><strong class="text-slate-800">60 requests / minute</strong> rate limit</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span><strong class="text-slate-800">10,000</strong> requests per month</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Full historical IPL dataset (2008–2024)</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Columnar DuckDB analytical aggregations</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Multi-Language SDK Quickstarts (6 languages)</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Interactive API Workbench with live testing</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Community Documentation &amp; OpenAPI Spec</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Action Button -->
+      <div class="pt-4">
+        {% if user.is_authenticated %}
+          <a href="{% url 'portal:dashboard' %}" class="block text-center w-full py-2.5 px-4 rounded-lg text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-800 transition">
+            Go to API Dashboard &rarr;
+          </a>
+        {% else %}
+          <a href="{% url 'accounts:signup' %}" class="block text-center w-full py-2.5 px-4 rounded-lg text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
+            Get Free API Key
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Card 2: Pro Tier (Recommended / Most Popular) -->
+    <div class="card-crisp p-8 flex flex-col justify-between space-y-6 relative border-2 border-emerald-500 shadow-md">
+      <!-- Popular Badge -->
+      <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-emerald-600 text-white shadow-sm">
+        Most Popular
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex justify-between items-center">
+          <h3 class="text-lg font-bold text-slate-900">Pro Tier</h3>
+          {% if user_tier == "pro" %}
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-100 text-sky-800 border border-sky-200">
+              Current Plan
+            </span>
+          {% endif %}
+        </div>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          For production apps, sports analytics startups, and data analysts requiring higher burst throughput.
+        </p>
+
+        <!-- Price Display -->
+        <div class="pt-2">
+          <div class="flex items-baseline space-x-1">
+            <span id="price-pro" class="text-4xl font-extrabold text-slate-900">$29</span>
+            <span id="period-pro" class="text-xs text-slate-500 font-medium">/ month</span>
+          </div>
+          <span id="subtext-pro" class="text-[11px] text-slate-500 block mt-1">Billed monthly, cancel anytime</span>
+        </div>
+
+        <!-- Features Checklist -->
+        <ul class="pt-4 space-y-3 text-xs text-slate-600 border-t border-slate-100">
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span><strong class="text-slate-800">300 requests / minute</strong> (5x capacity)</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span><strong class="text-slate-800">250,000</strong> requests per month</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Sub-30ms priority columnar DuckDB execution</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Granular ball-by-ball delivery statistics</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Up to 5 active production API credentials</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Priority email support with 24-hour response SLA</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Commercial redistribution &amp; broadcast rights</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Action Button -->
+      <div class="pt-4">
+        <button type="button" onclick="openGrantModal('pro')" class="block text-center w-full py-2.5 px-4 rounded-lg text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
+          Start 14-Day Free Trial
+        </button>
+      </div>
+    </div>
+
+    <!-- Card 3: Enterprise Scale -->
+    <div class="card-crisp p-8 flex flex-col justify-between space-y-6 relative border-slate-200 hover:border-slate-300 transition">
+      <div class="space-y-4">
+        <div class="flex justify-between items-center">
+          <h3 class="text-lg font-bold text-slate-900">Enterprise Scale</h3>
+          {% if user_tier == "enterprise" %}
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200">
+              Current Plan
+            </span>
+          {% endif %}
+        </div>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          For high-volume media broadcasts, fantasy cricket apps, and enterprise platforms requiring custom SLAs.
+        </p>
+
+        <!-- Price Display -->
+        <div class="pt-2">
+          <div class="flex items-baseline space-x-1">
+            <span id="price-enterprise" class="text-4xl font-extrabold text-slate-900">$199</span>
+            <span id="period-enterprise" class="text-xs text-slate-500 font-medium">/ month</span>
+          </div>
+          <span id="subtext-enterprise" class="text-[11px] text-slate-500 block mt-1">Or custom annual contract</span>
+        </div>
+
+        <!-- Features Checklist -->
+        <ul class="pt-4 space-y-3 text-xs text-slate-600 border-t border-slate-100">
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span><strong class="text-slate-800">1,200+ requests / minute</strong> (20x capacity)</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span><strong class="text-slate-800">Unlimited</strong> monthly query volume</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span><strong class="text-slate-800">99.95%</strong> Uptime SLA Guarantee</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Dedicated Slack &amp; Discord engineering channel</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Custom DuckDB analytical views &amp; aggregations</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span>Direct architectural consulting with the author</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Action Button -->
+      <div class="pt-4">
+        <a href="mailto:kmohdhamza10@gmail.com?subject=CricPulse%20Enterprise%20Inquiry" class="block text-center w-full py-2.5 px-4 rounded-lg text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-sm transition">
+          Contact Founder
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Detailed Feature Comparison Matrix Table -->
+  <div class="card-crisp overflow-hidden space-y-0">
+    <div class="px-6 py-5 bg-slate-50 border-b border-slate-200">
+      <h2 class="text-xl font-bold text-slate-900 tracking-tight">Full Plan Comparison Matrix</h2>
+      <p class="text-xs text-slate-500 mt-0.5">Comprehensive breakdown of technical capabilities across each tier.</p>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr class="border-b border-slate-200 bg-slate-100/70 font-semibold text-slate-700">
+            <th class="py-3.5 px-6 w-2/5">Capabilities &amp; Infrastructure</th>
+            <th class="py-3.5 px-6 text-center w-1/5">Developer Free</th>
+            <th class="py-3.5 px-6 text-center w-1/5 bg-emerald-50/50 text-emerald-900">Pro Tier</th>
+            <th class="py-3.5 px-6 text-center w-1/5">Enterprise</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-slate-600">
+          <!-- Section 1: Quotas -->
+          <tr class="bg-slate-50 font-bold text-slate-900">
+            <td colspan="4" class="py-2.5 px-6 uppercase tracking-wider text-[11px] text-slate-500">Rate Limits &amp; Throughput</td>
+          </tr>
+          <tr>
+            <td class="py-3 px-6 font-medium text-slate-800">Rate Limit (Per Key)</td>
+            <td class="py-3 px-6 text-center">60 req/min</td>
+            <td class="py-3 px-6 text-center font-bold text-emerald-700 bg-emerald-50/30">300 req/min</td>
+            <td class="py-3 px-6 text-center font-bold text-purple-700">1,200+ req/min</td>
+          </tr>
+          <tr>
+            <td class="py-3 px-6 font-medium text-slate-800">Monthly Request Volume</td>
+            <td class="py-3 px-6 text-center">10,000</td>
+            <td class="py-3 px-6 text-center bg-emerald-50/30">250,000</td>
+            <td class="py-3 px-6 text-center">Unlimited</td>
+          </tr>
+          <tr>
+            <td class="py-3 px-6 font-medium text-slate-800">Active API Key Limit</td>
+            <td class="py-3 px-6 text-center">1 active key</td>
+            <td class="py-3 px-6 text-center bg-emerald-50/30">5 active keys</td>
+            <td class="py-3 px-6 text-center">Unlimited</td>
+          </tr>
+
+          <!-- Section 2: Analytical Data Access -->
+          <tr class="bg-slate-50 font-bold text-slate-900">
+            <td colspan="4" class="py-2.5 px-6 uppercase tracking-wider text-[11px] text-slate-500">Cricket Data &amp; Analytics</td>
+          </tr>
+          <tr>
+            <td class="py-3 px-6 font-medium text-slate-800">Historical Season Coverage</td>
+            <td class="py-3 px-6 text-center">All (2008–2024)</td>
+            <td class="py-3 px-6 text-center bg-emerald-50/30">All (2008–2024)</td>
+            <td class="py-3 px-6 text-center">All (2008–2024)</td>
+          </tr>
+          <tr>
+            <td class="py-3 px-6 font-medium text-slate-800">Head-to-Head Rivalries &amp; Aliases</td>
+            <td class="py-3 px-6 text-center text-emerald-600 font-bold">&check;</td>
+            <td class="py-3 px-6 text-center text-emerald-600 font-bold bg-emerald-50/30">&check;</td>
+            <td class="py-3 px-6 text-center text-emerald-600 font-bold">&check;</td>
+          </tr>
+          <tr>
+            <td class="py-3 px-6 font-medium text-slate-800">Orange &amp; Purple Cap Leaderboards</td>
+            <td class="py-3 px-6 text-center text-emerald-600 font-bold">&check;</td>
+            <td class="py-3 px-6 text-center text-emerald-600 font-bold bg-emerald-50/30">&check;</td>
+            <td class="py-3 px-6 text-center text-emerald-600 font-bold">&check;</td>
+          </tr>
+          <tr>
+            <td class="py-3 px-6 font-medium text-slate-800">Completed-Innings Par Scores</td>
+            <td class="py-3 px-6 text-center text-emerald-600 font-bold">&check;</td>
+            <td class="py-3 px-6 text-center text-emerald-600 font-bold bg-emerald-50/30">&check;</td>
+            <td class="py-3 px-6 text-center text-emerald-600 font-bold">&check;</td>
+          </tr>
+          <tr>
+            <td class="py-3 px-6 font-medium text-slate-800">Custom Columnar SQL Aggregates</td>
+            <td class="py-3 px-6 text-center text-slate-300">&mdash;</td>
+            <td class="py-3 px-6 text-center text-slate-300 bg-emerald-50/30">&mdash;</td>
+            <td class="py-3 px-6 text-center text-emerald-600 font-bold">&check;</td>
+          </tr>
+
+          <!-- Section 3: Performance & Support -->
+          <tr class="bg-slate-50 font-bold text-slate-900">
+            <td colspan="4" class="py-2.5 px-6 uppercase tracking-wider text-[11px] text-slate-500">SLA &amp; Developer Support</td>
+          </tr>
+          <tr>
+            <td class="py-3 px-6 font-medium text-slate-800">Query Engine Execution Target</td>
+            <td class="py-3 px-6 text-center">&lt; 50ms</td>
+            <td class="py-3 px-6 text-center font-bold text-emerald-700 bg-emerald-50/30">&lt; 30ms (Priority)</td>
+            <td class="py-3 px-6 text-center font-bold text-purple-700">&lt; 20ms (Dedicated)</td>
+          </tr>
+          <tr>
+            <td class="py-3 px-6 font-medium text-slate-800">Uptime SLA Guarantee</td>
+            <td class="py-3 px-6 text-center">Best Effort</td>
+            <td class="py-3 px-6 text-center bg-emerald-50/30">99.5%</td>
+            <td class="py-3 px-6 text-center font-bold text-slate-900">99.95% (Contractual)</td>
+          </tr>
+          <tr>
+            <td class="py-3 px-6 font-medium text-slate-800">Developer Support Channel</td>
+            <td class="py-3 px-6 text-center">Community &amp; Docs</td>
+            <td class="py-3 px-6 text-center bg-emerald-50/30">Email (24h SLA)</td>
+            <td class="py-3 px-6 text-center font-bold text-purple-700">Dedicated Slack / Discord</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Frequently Asked Questions (FAQ) Accordion -->
+  <div class="max-w-4xl mx-auto space-y-6">
+    <div class="text-center space-y-2">
+      <h2 class="text-2xl font-bold text-slate-900">Frequently Asked Questions</h2>
+      <p class="text-xs text-slate-500">Everything you need to know about our data licensing, quotas, and architecture.</p>
+    </div>
+
+    <div class="space-y-3 pt-4">
+      {% for faq in faqs %}
+        <div class="card-crisp p-5 space-y-2">
+          <button type="button" onclick="toggleFaq(this)" class="w-full flex justify-between items-center text-left text-sm font-bold text-slate-900 hover:text-emerald-700 transition">
+            <span>{{ faq.q }}</span>
+            <svg class="w-4 h-4 text-slate-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </button>
+          <div class="faq-answer hidden text-xs text-slate-600 leading-relaxed pt-2 border-t border-slate-100">
+            {{ faq.a }}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<!-- Recruiter & Academic Grant Modal (Zero Credit Card Required) -->
+<div id="grant-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200">
+    <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+      <div class="flex items-center space-x-2">
+        <span class="text-xl">🎓</span>
+        <h3 class="text-lg font-bold text-slate-900">Activate Grant / Evaluator Access</h3>
+      </div>
+      <button type="button" onclick="closeGrantModal()" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+
+    <p class="text-xs text-slate-600 leading-relaxed">
+      We believe software tools should be accessible to students, open-source developers, and technical recruiters evaluating our platform. Tell us about your use case to activate complimentary Pro tier throughput.
+    </p>
+
+    <form onsubmit="handleGrantSubmit(event)" class="space-y-4 text-xs">
+      <div>
+        <label class="block font-semibold text-slate-700 uppercase tracking-wider mb-1">Your Name / Title</label>
+        <input type="text" id="grant-name" required placeholder="e.g. Mohd Hamza / Engineering Recruiter" class="w-full px-3.5 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800">
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-700 uppercase tracking-wider mb-1">Email Address</label>
+        <input type="email" id="grant-email" required placeholder="you@company.com or you@university.edu" class="w-full px-3.5 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800">
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-700 uppercase tracking-wider mb-1">Primary Use Case</label>
+        <select id="grant-role" class="w-full px-3.5 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800">
+          <option value="recruiter">Technical Hiring / Portfolio Evaluation</option>
+          <option value="student">Student Project / Academic Research</option>
+          <option value="hackathon">Hackathon / Open-Source Project</option>
+          <option value="commercial">Commercial Prototype</option>
+        </select>
+      </div>
+
+      <div class="pt-2 flex justify-end space-x-3">
+        <button type="button" onclick="closeGrantModal()" class="px-4 py-2 rounded-lg font-semibold text-slate-600 hover:bg-slate-100 transition">
+          Cancel
+        </button>
+        <button type="submit" class="px-5 py-2 rounded-lg font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition">
+          Submit &amp; Request Pro Key
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let isAnnual = false;
+
+  function toggleBillingInterval() {
+    isAnnual = !isAnnual;
+    const switchEl = document.getElementById("billing-switch");
+    const toggleBtn = document.getElementById("billing-toggle");
+    const labelMonthly = document.getElementById("label-monthly");
+    const labelAnnual = document.getElementById("label-annual");
+
+    const pricePro = document.getElementById("price-pro");
+    const periodPro = document.getElementById("period-pro");
+    const subtextPro = document.getElementById("subtext-pro");
+
+    const priceEnt = document.getElementById("price-enterprise");
+    const periodEnt = document.getElementById("period-enterprise");
+    const subtextEnt = document.getElementById("subtext-enterprise");
+
+    if (isAnnual) {
+      switchEl.classList.remove("translate-x-0");
+      switchEl.classList.add("translate-x-5");
+      toggleBtn.classList.remove("bg-slate-300");
+      toggleBtn.classList.add("bg-emerald-600");
+
+      labelMonthly.className = "text-slate-500";
+      labelAnnual.className = "text-slate-900 font-semibold";
+
+      if (pricePro) pricePro.textContent = "$279";
+      if (periodPro) periodPro.textContent = "/ year";
+      if (subtextPro) subtextPro.textContent = "Billed annually ($23/mo, save 20%)";
+
+      if (priceEnt) priceEnt.textContent = "$1,899";
+      if (periodEnt) periodEnt.textContent = "/ year";
+      if (subtextEnt) subtextEnt.textContent = "Billed annually (save 20%)";
+    } else {
+      switchEl.classList.remove("translate-x-5");
+      switchEl.classList.add("translate-x-0");
+      toggleBtn.classList.add("bg-emerald-600");
+
+      labelMonthly.className = "text-slate-900 font-semibold";
+      labelAnnual.className = "text-slate-500";
+
+      if (pricePro) pricePro.textContent = "$29";
+      if (periodPro) periodPro.textContent = "/ month";
+      if (subtextPro) subtextPro.textContent = "Billed monthly, cancel anytime";
+
+      if (priceEnt) priceEnt.textContent = "$199";
+      if (periodEnt) periodEnt.textContent = "/ month";
+      if (subtextEnt) subtextEnt.textContent = "Or custom annual contract";
+    }
+  }
+
+  function toggleFaq(buttonElement) {
+    const answer = buttonElement.nextElementSibling;
+    const icon = buttonElement.querySelector("svg");
+    const isHidden = answer.classList.contains("hidden");
+
+    if (isHidden) {
+      answer.classList.remove("hidden");
+      if (icon) icon.style.transform = "rotate(180deg)";
+    } else {
+      answer.classList.add("hidden");
+      if (icon) icon.style.transform = "rotate(0deg)";
+    }
+  }
+
+  function openGrantModal(tier = "pro") {
+    const modal = document.getElementById("grant-modal");
+    if (modal) modal.classList.remove("hidden");
+  }
+
+  function closeGrantModal() {
+    const modal = document.getElementById("grant-modal");
+    if (modal) modal.classList.add("hidden");
+  }
+
+  function handleGrantSubmit(e) {
+    e.preventDefault();
+    const name = document.getElementById("grant-name").value;
+    const email = document.getElementById("grant-email").value;
+    const role = document.getElementById("grant-role").value;
+
+    closeGrantModal();
+    alert(`Thank you, ${name}! Your grant request for ${role} has been received. Our team will review and email your complimentary Pro credential to ${email} within 24 hours.`);
+  }
+</script>
+{% endblock %}

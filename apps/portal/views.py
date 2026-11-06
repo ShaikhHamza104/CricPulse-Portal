@@ -52,6 +52,59 @@ def home_view(request):
     return render(request, "portal/home.html", context)
 
 
+def pricing_view(request):
+    """
+    Transparent developer pricing and enterprise plans.
+    Features tier comparisons, student & open-source grants, feature matrix, and FAQs.
+    """
+    user_tier = "anonymous"
+    active_key = None
+    if request.user.is_authenticated:
+        if request.user.is_staff or request.user.is_superuser:
+            user_tier = "enterprise"
+        else:
+            active_key = request.user.api_keys.filter(is_active=True).first()
+            user_tier = active_key.tier if active_key else "free"
+
+    engine_url = getattr(
+        settings, "CRICPULSE_ENGINE_URL", "https://cricpulse-engine.onrender.com"
+    )
+
+    faqs = [
+        {
+            "q": "What happens when I hit my rate limit?",
+            "a": "The CricPulse engine returns an HTTP 429 (Too Many Requests) with a standard 'Retry-After' header indicating the exact seconds to wait before retrying.",
+        },
+        {
+            "q": "Are student, academic, and hackathon grants really free?",
+            "a": "Yes! We believe in supporting developers. Students, researchers, and hackathon teams can request complimentary Pro access without any credit card required.",
+        },
+        {
+            "q": "Can I use the API in commercial mobile or web applications?",
+            "a": "Yes. The analytical engine processes historical match data derived under the Open Database License (ODbL). All tiers permit commercial use with standard platform attribution.",
+        },
+        {
+            "q": "How does key-based rate limiting benefit backend microservices?",
+            "a": "Unlike primitive IP-based limits that block your server when multiple users connect through a single backend, CricPulse limits are isolated per cryptographic credential token.",
+        },
+        {
+            "q": "What is the query latency of analytical calculations?",
+            "a": "Historical aggregations execute against columnar storage via DuckDB, averaging sub-30ms query latency across 16+ seasons of ball-by-ball delivery records.",
+        },
+        {
+            "q": "How do I upgrade to Enterprise with dedicated custom SLAs?",
+            "a": "Contact our engineering team directly at kmohdhamza10@gmail.com with your projected queries per minute for custom SLA and throughput allocation.",
+        },
+    ]
+
+    context = {
+        "user_tier": user_tier,
+        "engine_url": engine_url,
+        "faqs": faqs,
+    }
+    return render(request, "portal/pricing.html", context)
+
+
 MAX_ACTIVE_KEYS_PER_USER = 5
 
 
