@@ -91,3 +91,119 @@ class TestAuthenticationFlows:
         user.refresh_from_db()
         assert user.first_name == "UpdatedName"
         assert user.email == "new@ipl.com"
+
+    def test_login_brute_force_throttling_by_ip(self, client):
+        from django.core.cache import cache
+        cache.clear()
+
+        User.objects.create_user(username="brute_victim", password="CorrectPass123!")
+        login_url = reverse("accounts:login")
+
+        # 5 failed attempts from same IP
+        for _ in range(5):
+            resp = client.post(
+                login_url,
+                {"username": "brute_victim", "password": "WrongPassword!"},
+                REMOTE_ADDR="198.51.100.99",
+            )
+            assert resp.status_code == 200
+            assert "Invalid username or password" in resp.content.decode()
+
+        # 6th attempt must be throttled with HTTP 429
+        resp_429 = client.post(
+            login_url,
+            {"username": "brute_victim", "password": "CorrectPass123!"},
+            REMOTE_ADDR="198.51.100.99",
+        )
+        assert resp_429.status_code == 429
+        assert "Too many failed login attempts" in resp_429.content.decode()
+
+    def test_login_brute_force_throttling_by_username(self, client):
+        from django.core.cache import cache
+        cache.clear()
+
+        User.objects.create_user(username="target_user", password="CorrectPass123!")
+        login_url = reverse("accounts:login")
+
+        # Attacker rotates IP but attacks same username 5 times
+        for i in range(5):
+            resp = client.post(
+                login_url,
+                {"username": "target_user", "password": "WrongPassword!"},
+                REMOTE_ADDR=f"10.10.10.{i+1}",
+            )
+            assert resp.status_code == 200
+
+        # 6th attempt from a brand new IP for this username must be blocked
+        resp_429 = client.post(
+            login_url,
+            {"username": "target_user", "password": "WrongPassword!"},
+            REMOTE_ADDR="10.10.10.99",
+        )
+        assert resp_429.status_code == 429
+        assert "Too many failed login attempts" in resp_429.content.decode()
+
+    def test_login_success_clears_throttle_counter(self, client):
+        from django.core.cache import cache
+        cache.clear()
+
+        User.objects.create_user(username="clean_user", password="ValidPassword123!")
+        login_url = reverse("accounts:login")
+
+        # 3 failed attempts
+        for _ in range(3):
+            client.post(
+                login_url,
+                {"username": "clean_user", "password": "WrongPassword!"},
+                REMOTE_ADDR="192.168.50.1",
+            )
+
+        # Successful login clears the counter
+        success_resp = client.post(
+            login_url,
+            {"username": "clean_user", "password": "ValidPassword123!"},
+            REMOTE_ADDR="192.168.50.1",
+            follow=True,
+        )
+        assert success_resp.status_code == 200
+        assert "_auth_user_id" in client.session
+
+        # Counter is cleared
+        assert cache.get("throttle:login:ip:192.168.50.1") is None
+        assert cache.get("throttle:login:user:clean_user") is None
+
+    def test_signup_rate_limiting_per_ip(self, client):
+        from django.core.cache import cache
+        cache.clear()
+
+        signup_url = reverse("accounts:signup")
+        ip = "198.51.100.77"
+
+        # 5 valid signup attempts from same IP
+        for i in range(5):
+            resp = client.post(
+                signup_url,
+                {
+                    "username": f"bulk_user_{i}",
+                    "email": f"bulk_{i}@ipl.com",
+                    "password1": "SecurePass123!",
+                    "password2": "SecurePass123!",
+                },
+                REMOTE_ADDR=ip,
+            )
+            assert resp.status_code == 302
+            client.logout()  # Log out so subsequent request simulates a new visitor from the same IP
+
+        # 6th signup attempt from same IP must be rejected with 429
+        resp_429 = client.post(
+            signup_url,
+            {
+                "username": "bulk_user_6",
+                "email": "bulk_6@ipl.com",
+                "password1": "SecurePass123!",
+                "password2": "SecurePass123!",
+            },
+            REMOTE_ADDR=ip,
+        )
+        assert resp_429.status_code == 429
+        assert "Too many account creation attempts" in resp_429.content.decode()
