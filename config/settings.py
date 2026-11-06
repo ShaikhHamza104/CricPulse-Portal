@@ -40,6 +40,9 @@ else:
 allowed_hosts_str = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0,.onrender.com")
 ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_str.split(",") if h.strip()]
 
+# Number of trusted reverse proxies in front of Django (Render uses 1)
+NUM_PROXIES = int(os.getenv("NUM_PROXIES", "1"))
+
 # CricPulse Backend Engine URL
 CRICPULSE_ENGINE_URL = os.getenv(
     "CRICPULSE_ENGINE_URL", "https://cricpulse-engine.onrender.com"
@@ -112,6 +115,27 @@ else:
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
+# Cache Configuration
+# Defaults to LocMemCache; allows configuring a shared cache (Redis/Memcached) via REDIS_URL or CACHE_URL
+REDIS_URL = os.getenv("REDIS_URL") or os.getenv("CACHE_URL")
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+        }
+    }
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "cricpulse-portal-cache",
+            "OPTIONS": {
+                "MAX_ENTRIES": 10000,
+            },
         }
     }
 

@@ -106,8 +106,8 @@ def test_api_key_creation_quota_limit(client, django_user_model):
 
 @patch("httpx.Client.get")
 def test_live_query_proxy_rate_limit(mock_get, client):
-    from apps.analytics.views import _proxy_request_history
-    _proxy_request_history.clear()
+    from django.core.cache import cache
+    cache.clear()
 
     mock_resp = MagicMock()
     mock_resp.status_code = 200
@@ -128,6 +128,60 @@ def test_live_query_proxy_rate_limit(mock_get, client):
     assert resp_429.status_code == 429
     assert "rate limit exceeded" in resp_429.json()["error"].lower()
     assert "Retry-After" in resp_429.headers
+
+
+@patch("httpx.Client.get")
+def test_rotating_x_forwarded_for_cannot_bypass_rate_limit(mock_get, client):
+    from django.core.cache import cache
+    cache.clear()
+
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.headers = {"X-Process-Time": "0.010s"}
+    mock_resp.json.return_value = {"status": "ok"}
+    mock_resp.content = b'{"status": "ok"}'
+    mock_get.return_value = mock_resp
+
+    proxy_url = reverse("analytics:proxy")
+    real_client_ip = "198.51.100.42"
+
+    # Attacker rotates the client-controlled first IP in X-Forwarded-For
+    for i in range(60):
+        fake_ip = f"10.0.{i // 256}.{i % 256}"
+        resp = client.get(
+            proxy_url,
+            {"endpoint": "/health"},
+            HTTP_X_FORWARDED_FOR=f"{fake_ip}, {real_client_ip}",
+        )
+        assert resp.status_code == 200
+
+    # 61st request with yet another fake IP must be blocked because the real client IP is tracked
+    resp_429 = client.get(
+        proxy_url,
+        {"endpoint": "/health"},
+        HTTP_X_FORWARDED_FOR=f"10.99.99.99, {real_client_ip}",
+    )
+    assert resp_429.status_code == 429
+    assert "rate limit exceeded" in resp_429.json()["error"].lower()
+    assert "Retry-After" in resp_429.headers
+
+
+def test_get_client_ip_fallback():
+    from django.test import RequestFactory
+    from apps.analytics.views import _get_client_ip
+    rf = RequestFactory()
+
+    # Valid IP extracted from last entry appended by proxy
+    req1 = rf.get("/", HTTP_X_FORWARDED_FOR="1.1.1.1, 198.51.100.5")
+    assert _get_client_ip(req1) == "198.51.100.5"
+
+    # Malicious invalid IP in X-Forwarded-For falls back to REMOTE_ADDR
+    req2 = rf.get("/", HTTP_X_FORWARDED_FOR="not-an-ip", REMOTE_ADDR="192.168.1.10")
+    assert _get_client_ip(req2) == "192.168.1.10"
+
+    # Missing X-Forwarded-For falls back to REMOTE_ADDR
+    req3 = rf.get("/", REMOTE_ADDR="192.168.1.20")
+    assert _get_client_ip(req3) == "192.168.1.20"
 
 
 def test_internal_verify_key_unauthorized_without_secret(client):

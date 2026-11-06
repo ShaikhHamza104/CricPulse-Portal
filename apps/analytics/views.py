@@ -1,28 +1,45 @@
+import ipaddress
 import logging
 import time
-from collections import defaultdict
 import httpx
 from django.conf import settings
 from django.contrib import messages
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import render
 from .player_names import humanize_player_name
 
 logger = logging.getLogger(__name__)
 
-# Rate limiter state for live query workbench proxy
-_proxy_request_history: dict[str, list[float]] = defaultdict(list)
-_last_proxy_cleanup: float = 0.0
+# Rate limiter configuration for live query workbench proxy
 _PROXY_RATE_LIMIT = 60
 _PROXY_WINDOW = 60.0
 
 
 def _get_client_ip(request) -> str:
-    """Extract real client IP behind reverse proxies (Cloudflare, Render, Nginx)."""
+    """
+    Extract real client IP behind trusted reverse proxies (e.g. Render, Cloudflare).
+    Render appends the genuine client IP to the end of the X-Forwarded-For chain.
+    Reads NUM_PROXIES from settings (default 1), validates with ipaddress, and falls back to REMOTE_ADDR.
+    """
     forwarded = request.headers.get("x-forwarded-for") or request.META.get("HTTP_X_FORWARDED_FOR")
     if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR", "127.0.0.1")
+        parts = [p.strip() for p in forwarded.split(",") if p.strip()]
+        num_proxies = getattr(settings, "NUM_PROXIES", 1)
+        if parts:
+            candidate = parts[-num_proxies] if len(parts) >= num_proxies else parts[-1]
+            try:
+                ipaddress.ip_address(candidate)
+                return candidate
+            except ValueError:
+                pass
+
+    remote_addr = request.META.get("REMOTE_ADDR", "127.0.0.1")
+    try:
+        ipaddress.ip_address(remote_addr)
+        return remote_addr
+    except ValueError:
+        return "127.0.0.1"
 
 # Standard IPL Franchise Aliases
 IPL_TEAMS = [
@@ -185,22 +202,14 @@ def live_query_proxy(request):
     captures response headers, execution latency, status codes, and payload.
     Defends against SSRF, directory traversal, and rate exhaustion.
     """
-    global _last_proxy_cleanup
-
     client_ip = _get_client_ip(request)
     now = time.time()
 
-    # Periodic cleanup of stale IPs to prevent memory leaks
-    if now - _last_proxy_cleanup > _PROXY_WINDOW:
-        for ip in list(_proxy_request_history.keys()):
-            _proxy_request_history[ip] = [t for t in _proxy_request_history[ip] if now - t < _PROXY_WINDOW]
-            if not _proxy_request_history[ip]:
-                del _proxy_request_history[ip]
-        _last_proxy_cleanup = now
+    # Cache-backed sliding-window rate limit check
+    cache_key = f"rate_limit:proxy:{client_ip}"
+    timestamps = cache.get(cache_key) or []
+    timestamps = [t for t in timestamps if now - t < _PROXY_WINDOW]
 
-    # Sliding-window rate limit check
-    timestamps = [t for t in _proxy_request_history[client_ip] if now - t < _PROXY_WINDOW]
-    _proxy_request_history[client_ip] = timestamps
     if len(timestamps) >= _PROXY_RATE_LIMIT:
         retry_after = int(_PROXY_WINDOW - (now - timestamps[0]))
         return JsonResponse(
@@ -212,7 +221,9 @@ def live_query_proxy(request):
             status=429,
             headers={"Retry-After": str(max(1, retry_after))},
         )
-    _proxy_request_history[client_ip].append(now)
+
+    timestamps.append(now)
+    cache.set(cache_key, timestamps, timeout=int(_PROXY_WINDOW) + 5)
 
     endpoint = request.GET.get("endpoint", "/health").strip()
 
