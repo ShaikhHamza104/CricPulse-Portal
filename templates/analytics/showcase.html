@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Cricket Analytics Showcase — CricPulse Portal{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+    <div>
+      <div class="flex items-center space-x-2 text-xs font-semibold text-emerald-600 uppercase tracking-wider">
+        <span>Live Engine Data Explorer</span>
+        <span>•</span>
+        <span>1,243 Matches (2008–2024)</span>
+      </div>
+      <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight mt-1">Interactive Cricket Analytics Hub</h1>
+      <p class="text-sm text-slate-500 mt-1 max-w-2xl">
+        Explore live aggregates computed dynamically by DuckDB and Apache Parquet from the CricPulse-Engine backend.
+      </p>
+    </div>
+
+    <!-- Active Tab Buttons -->
+    <div class="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs sm:text-sm font-semibold self-start md:self-auto">
+      <a href="?tab=rivalry&amp;team1={{ team1 }}&amp;team2={{ team2 }}" class="px-3.5 py-1.5 rounded-lg transition {% if tab == 'rivalry' %}bg-white text-slate-900 shadow-sm{% else %}text-slate-600 hover:text-slate-900{% endif %}">
+        ⚔️ Rivalry Arena
+      </a>
+      <a href="?tab=caps&amp;season={{ season }}" class="px-3.5 py-1.5 rounded-lg transition {% if tab == 'caps' %}bg-white text-slate-900 shadow-sm{% else %}text-slate-600 hover:text-slate-900{% endif %}">
+        🏆 Cap Leaderboards
+      </a>
+      <a href="?tab=player" class="px-3.5 py-1.5 rounded-lg transition {% if tab == 'player' %}bg-white text-slate-900 shadow-sm{% else %}text-slate-600 hover:text-slate-900{% endif %}">
+        🔍 Player Scout
+      </a>
+    </div>
+  </div>
+
+  <!-- Graceful Engine Notice / Error State -->
+  {% if error_message %}
+    <div class="p-5 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <span class="text-2xl">⏳</span>
+        <div>
+          <h4 class="text-sm font-bold text-amber-900">Backend Notice</h4>
+          <p class="text-xs text-amber-800 mt-0.5 leading-relaxed">{{ error_message }}</p>
+        </div>
+      </div>
+      <a href="javascript:location.reload()" class="px-3 py-1.5 rounded-lg bg-amber-100 text-amber-900 hover:bg-amber-200 text-xs font-semibold whitespace-nowrap transition">
+        Retry Request
+      </a>
+    </div>
+  {% endif %}
+
+  <!-- TAB 1: HEAD-TO-HEAD RIVALRY -->
+  {% if tab == 'rivalry' %}
+    <div class="space-y-8">
+      
+      <!-- Selection Bar -->
+      <div class="card-crisp p-6">
+        <form method="GET" action="{% url 'analytics:showcase' %}" class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+          <input type="hidden" name="tab" value="rivalry">
+
+          <div class="sm:col-span-4">
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Franchise 1</label>
+            <select name="team1" class="w-full px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none">
+              {% for code, label in ipl_teams %}
+                <option value="{{ code }}" {% if team1 == code %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="sm:col-span-1 text-center font-extrabold text-slate-400 self-center hidden sm:block">
+            VS
+          </div>
+
+          <div class="sm:col-span-4">
+            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Franchise 2</label>
+            <select name="team2" class="w-full px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none">
+              {% for code, label in ipl_teams %}
+                <option value="{{ code }}" {% if team2 == code %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="sm:col-span-3">
+            <button type="submit" class="w-full py-2.5 px-4 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition">
+              Compare Rivalry
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Rivalry Results Card -->
+      {% if rivalry_data %}
+        <div class="card-crisp p-6 sm:p-8 space-y-8">
+          
+          <div class="text-center space-y-1">
+            <span class="text-xs font-bold uppercase tracking-widest text-slate-400">All-Time IPL Rivalry</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">
+              {{ rivalry_data.team1|default:team1 }} <span class="text-emerald-600">vs</span> {{ rivalry_data.team2|default:team2 }}
+            </h2>
+            <p class="text-xs text-slate-500">Historical aggregate across {{ rivalry_data.total_matches }} matches</p>
+          </div>
+
+          <!-- Scoreboard Metric Boxes -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
+            
+            <div class="p-6 rounded-xl bg-slate-50 border border-slate-200">
+              <div class="text-xs font-bold text-slate-500 uppercase">{{ rivalry_data.team1|default:team1 }} Wins</div>
+              <div class="text-4xl font-extrabold text-emerald-600 mt-2">{{ rivalry_data.team1_wins }}</div>
+              <div class="text-xs font-semibold text-slate-600 mt-1">{{ rivalry_data.team1_win_pct }}% Win Rate</div>
+            </div>
+
+            <div class="p-6 rounded-xl bg-slate-50 border border-slate-200">
+              <div class="text-xs font-bold text-slate-500 uppercase">Total Clashes</div>
+              <div class="text-4xl font-extrabold text-slate-900 mt-2">{{ rivalry_data.total_matches }}</div>
+              <div class="text-xs text-slate-500 mt-1">{{ rivalry_data.no_result|default:"0" }} Tied / No Result</div>
+            </div>
+
+            <div class="p-6 rounded-xl bg-slate-50 border border-slate-200">
+              <div class="text-xs font-bold text-slate-500 uppercase">{{ rivalry_data.team2|default:team2 }} Wins</div>
+              <div class="text-4xl font-extrabold text-sky-600 mt-2">{{ rivalry_data.team2_wins }}</div>
+              <div class="text-xs font-semibold text-slate-600 mt-1">{{ rivalry_data.team2_win_pct }}% Win Rate</div>
+            </div>
+
+          </div>
+
+          <!-- Progress Comparison Bar -->
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs font-bold text-slate-700">
+              <span>{{ rivalry_data.team1|default:team1 }}: {{ rivalry_data.team1_win_pct }}%</span>
+              <span>{{ rivalry_data.team2|default:team2 }}: {{ rivalry_data.team2_win_pct }}%</span>
+            </div>
+            <div class="w-full h-3 rounded-full bg-slate-200 overflow-hidden flex">
+              <div class="bg-emerald-500 h-full transition-all" style="width: {{ rivalry_data.team1_win_pct }}%"></div>
+              <div class="bg-sky-500 h-full transition-all" style="width: {{ rivalry_data.team2_win_pct }}%"></div>
+            </div>
+          </div>
+
+        </div>
+      {% endif %}
+
+    </div>
+  {% endif %}
+
+  <!-- TAB 2: CAPS LEADERBOARDS -->
+  {% if tab == 'caps' %}
+    <div class="space-y-8">
+      
+      <!-- Season Selection Form -->
+      <div class="card-crisp p-6">
+        <form method="GET" action="{% url 'analytics:showcase' %}" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+          <input type="hidden" name="tab" value="caps">
+          
+          <div class="flex items-center space-x-3">
+            <label class="text-xs font-semibold text-slate-700 uppercase tracking-wider whitespace-nowrap">IPL Season:</label>
+            <select name="season" class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 outline-none">
+              {% for s in ipl_seasons %}
+                <option value="{{ s }}" {% if season == s %}selected{% endif %}>Season {{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <button type="submit" class="px-5 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition">
+            Load Season Leaderboard
+          </button>
+        </form>
+      </div>
+
+      <!-- Two-column Leaderboards -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- Orange Cap (Batting) -->
+        <div class="card-crisp overflow-hidden">
+          <div class="px-6 py-4 bg-amber-50 border-b border-amber-200 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="text-xl">🧢</span>
+              <h3 class="text-base font-bold text-amber-900">Orange Cap — {{ season }}</h3>
+            </div>
+            <span class="text-xs font-semibold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">Top Run Scorers</span>
+          </div>
+
+          <div class="p-4 overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="text-slate-400 uppercase font-semibold border-b border-slate-100">
+                  <th class="py-2.5 px-3">#</th>
+                  <th class="py-2.5 px-3">Batsman</th>
+                  <th class="py-2.5 px-3 text-right">Runs</th>
+                  <th class="py-2.5 px-3 text-right">Balls</th>
+                  <th class="py-2.5 px-3 text-right">SR</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-medium text-slate-800">
+                {% if caps_data.orange %}
+                  {% for player in caps_data.orange|slice:":10" %}
+                    <tr class="{% if forloop.first %}bg-amber-50/50 font-bold{% endif %} hover:bg-slate-50 transition">
+                      <td class="py-2.5 px-3 text-slate-500">{{ forloop.counter }}</td>
+                      <td class="py-2.5 px-3 font-semibold">{{ player.display_name }}</td>
+                      <td class="py-2.5 px-3 text-right text-amber-700 font-bold">{{ player.display_runs }}</td>
+                      <td class="py-2.5 px-3 text-right text-slate-500">{{ player.display_balls }}</td>
+                      <td class="py-2.5 px-3 text-right font-mono">{{ player.display_sr }}</td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="5" class="py-6 text-center text-slate-400">Leaderboard data loading or unavailable.</td></tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Purple Cap (Bowling) -->
+        <div class="card-crisp overflow-hidden">
+          <div class="px-6 py-4 bg-purple-50 border-b border-purple-200 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="text-xl">🟣</span>
+              <h3 class="text-base font-bold text-purple-900">Purple Cap — {{ season }}</h3>
+            </div>
+            <span class="text-xs font-semibold text-purple-800 bg-purple-100 px-2.5 py-0.5 rounded-full">Top Wicket Takers</span>
+          </div>
+
+          <div class="p-4 overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr class="text-slate-400 uppercase font-semibold border-b border-slate-100">
+                  <th class="py-2.5 px-3">#</th>
+                  <th class="py-2.5 px-3">Bowler</th>
+                  <th class="py-2.5 px-3 text-right">Wickets</th>
+                  <th class="py-2.5 px-3 text-right">Overs</th>
+                  <th class="py-2.5 px-3 text-right">Economy</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-medium text-slate-800">
+                {% if caps_data.purple %}
+                  {% for bowler in caps_data.purple|slice:":10" %}
+                    <tr class="{% if forloop.first %}bg-purple-50/50 font-bold{% endif %} hover:bg-slate-50 transition">
+                      <td class="py-2.5 px-3 text-slate-500">{{ forloop.counter }}</td>
+                      <td class="py-2.5 px-3 font-semibold">{{ bowler.display_name }}</td>
+                      <td class="py-2.5 px-3 text-right text-purple-700 font-bold">{{ bowler.display_wickets }}</td>
+                      <td class="py-2.5 px-3 text-right text-slate-500 font-mono">{{ bowler.display_overs }}</td>
+                      <td class="py-2.5 px-3 text-right font-mono">{{ bowler.display_econ }}</td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="5" class="py-6 text-center text-slate-400">Leaderboard data loading or unavailable.</td></tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  {% endif %}
+
+  <!-- TAB 3: PLAYER SCOUT -->
+  {% if tab == 'player' %}
+    <div class="space-y-8">
+      
+      <!-- Search Form -->
+      <div class="card-crisp p-6">
+        <form method="GET" action="{% url 'analytics:showcase' %}" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <input type="hidden" name="tab" value="player">
+          <input type="text" name="player" value="{{ player_query }}" placeholder="Search player name (e.g. Kohli, Bumrah, Dhoni, Rohit, Russell)..." required class="flex-grow px-4 py-2.5 rounded-lg border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+          <button type="submit" class="px-6 py-2.5 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-sm whitespace-nowrap">
+            Search Player
+          </button>
+        </form>
+      </div>
+
+      <!-- Player Profile Card -->
+      {% if player_data %}
+        <div class="card-crisp p-6 sm:p-8 space-y-6">
+          <div class="flex items-center space-x-4 border-b border-slate-200 pb-6">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-extrabold text-2xl shadow">
+              {{ player_data.display_name|slice:":1" }}
+            </div>
+            <div>
+              <h2 class="text-2xl font-extrabold text-slate-900">{{ player_data.display_name }}</h2>
+              <p class="text-xs text-slate-500">IPL Career Profile • ID: <code class="font-mono text-slate-700">{{ player_data.display_id }}</code></p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <span class="text-xs text-slate-500 font-semibold uppercase">Batting Runs</span>
+              <div class="text-2xl font-extrabold text-slate-900 mt-1">{{ player_data.display_runs }}</div>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <span class="text-xs text-slate-500 font-semibold uppercase">Strike Rate</span>
+              <div class="text-2xl font-extrabold text-emerald-600 mt-1">{{ player_data.display_sr }}</div>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <span class="text-xs text-slate-500 font-semibold uppercase">Wickets</span>
+              <div class="text-2xl font-extrabold text-purple-600 mt-1">{{ player_data.display_wickets }}</div>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <span class="text-xs text-slate-500 font-semibold uppercase">Bowling Economy</span>
+              <div class="text-2xl font-extrabold text-sky-600 mt-1">{{ player_data.display_econ }}</div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

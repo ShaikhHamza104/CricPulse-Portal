@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+
+{% block title %}Developer Dashboard — CricPulse Portal{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+
+  <!-- Header & Greeting -->
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-slate-200">
+    <div>
+      <div class="flex items-center space-x-2">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Developer Dashboard</h1>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Free Tier</span>
+      </div>
+      <p class="text-sm text-slate-500 mt-1">
+        Manage your CricPulse API credentials, monitor quotas, and test analytical endpoints live.
+      </p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex items-center space-x-3">
+      <a href="{% url 'portal:docs' %}" class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition">
+        View API Docs
+      </a>
+      <a href="{% url 'analytics:showcase' %}" class="px-4 py-2 rounded-lg text-sm font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition">
+        Cricket Showcase
+      </a>
+    </div>
+  </div>
+
+  <!-- Quick Stats Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+    <div class="card-crisp p-5">
+      <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active Credentials</div>
+      <div class="text-3xl font-extrabold text-slate-900 mt-1">{{ active_keys_count }}</div>
+      <div class="text-xs text-slate-500 mt-1">Cryptographic 24-byte hex keys</div>
+    </div>
+
+    <div class="card-crisp p-5">
+      <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Current Rate Limit</div>
+      <div class="text-3xl font-extrabold text-emerald-600 mt-1">60 req/min</div>
+      <div class="text-xs text-slate-500 mt-1">Enforced per IP / credential token</div>
+    </div>
+
+    <div class="card-crisp p-5">
+      <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Engine Endpoint</div>
+      <div class="text-sm font-mono font-semibold text-slate-800 truncate mt-2">{{ engine_url }}</div>
+      <div class="text-xs text-emerald-600 font-medium mt-1">FastAPI + DuckDB Columnar OLAP</div>
+    </div>
+  </div>
+
+  <!-- Primary Active API Key Card -->
+  <div class="card-crisp p-6 sm:p-8 space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h2 class="text-lg font-bold text-slate-900">Your Active API Key</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Include this key in the <code class="text-slate-800 font-semibold font-mono">X-API-Key</code> request header.</p>
+      </div>
+      {% if primary_key %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 self-start sm:self-auto">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 pulse-live"></span>
+          Key Active
+        </span>
+      {% endif %}
+    </div>
+
+    {% if primary_key %}
+      <!-- Key Display Box -->
+      <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div class="flex items-center space-x-3 overflow-hidden">
+          <span class="text-lg text-slate-400">🔑</span>
+          <span id="primary-key-text" data-masked="true" class="font-mono text-sm sm:text-base font-semibold text-slate-800 truncate select-all">
+            {{ primary_key.masked_key }}
+          </span>
+        </div>
+
+        <div class="flex items-center space-x-2 flex-shrink-0">
+          <button type="button" onclick="toggleKeyVisibility('primary-key-text', '{{ primary_key.key }}', '{{ primary_key.masked_key }}', this)" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition flex items-center space-x-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+            <span>Reveal</span>
+          </button>
+
+          <button type="button" onclick="copyToClipboard('{{ primary_key.key }}', this)" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 transition flex items-center space-x-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            <span>Copy Key</span>
+          </button>
+        </div>
+      </div>
+    {% else %}
+      <div class="bg-amber-50 rounded-xl border border-amber-200 p-6 text-center space-y-3">
+        <p class="text-sm font-semibold text-amber-800">You currently do not have an active API key.</p>
+        <p class="text-xs text-amber-700">Generate a new key below to immediately begin accessing the CricPulse analytics engine.</p>
+      </div>
+    {% endif %}
+
+    <!-- Generate Additional Key Form -->
+    <div class="pt-4 border-t border-slate-100">
+      <form method="post" action="{% url 'portal:create_key' %}" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        {% csrf_token %}
+        <input type="text" name="name" placeholder="e.g. Production Staging Key, Mobile App" required class="flex-grow px-4 py-2 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+        <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 transition whitespace-nowrap">
+          + Generate Additional Key
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Key Management Table -->
+  <div class="card-crisp overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+      <h3 class="text-sm font-bold text-slate-900">All Issued API Keys</h3>
+      <span class="text-xs text-slate-500">{{ keys.count }} total credentials</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 text-slate-500 text-xs uppercase font-semibold bg-white">
+            <th class="py-3 px-6">Label / Name</th>
+            <th class="py-3 px-6">Masked Key</th>
+            <th class="py-3 px-6">Tier</th>
+            <th class="py-3 px-6">Status</th>
+            <th class="py-3 px-6">Created</th>
+            <th class="py-3 px-6 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 bg-white">
+          {% for k in keys %}
+            <tr class="hover:bg-slate-50/70 transition">
+              <td class="py-3.5 px-6 font-semibold text-slate-800">{{ k.name }}</td>
+              <td class="py-3.5 px-6 font-mono text-xs text-slate-600">{{ k.masked_key }}</td>
+              <td class="py-3.5 px-6">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">
+                  {{ k.get_tier_display }}
+                </span>
+              </td>
+              <td class="py-3.5 px-6">
+                {% if k.is_active %}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Active</span>
+                {% else %}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">Revoked</span>
+                {% endif %}
+              </td>
+              <td class="py-3.5 px-6 text-xs text-slate-500">{{ k.created_at|date:"M d, Y" }}</td>
+              <td class="py-3.5 px-6 text-right space-x-2">
+                {% if k.is_active %}
+                  <button type="button" onclick="copyToClipboard('{{ k.key }}', this)" class="px-2.5 py-1 text-xs font-medium rounded border border-slate-300 hover:bg-slate-100 text-slate-700 transition">
+                    Copy
+                  </button>
+                  <form method="post" action="{% url 'portal:revoke_key' k.id %}" class="inline" onsubmit="return confirm('Are you sure you want to revoke this API key? Applications using this key will immediately stop working.')">
+                    {% csrf_token %}
+                    <button type="submit" class="px-2.5 py-1 text-xs font-medium rounded text-rose-700 hover:bg-rose-50 border border-rose-200 transition">
+                      Revoke
+                    </button>
+                  </form>
+                {% else %}
+                  <span class="text-xs text-slate-400 italic">Revoked on {{ k.revoked_at|date:"M d" }}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="py-6 text-center text-slate-500 text-sm">
+                No keys created yet. Generate your first API key above!
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- UNBOUNDED API WORKBENCH (Postman/RapidAPI Style) -->
+  <div class="card-crisp p-6 sm:p-8 space-y-6">
+    
+    <!-- Hidden configuration references for JS -->
+    <input type="hidden" id="workbench-engine-base" value="{{ engine_url }}">
+    <input type="hidden" id="workbench-active-key" value="{{ primary_key.key|default:'cric_live_YOUR_KEY' }}">
+
+    <!-- Header & Live Diagnostics -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
+      <div>
+        <div class="flex items-center space-x-2">
+          <h2 class="text-xl font-bold text-slate-900 tracking-tight">Interactive API Workbench</h2>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+            Unbounded
+          </span>
+        </div>
+        <p class="text-xs text-slate-500 mt-0.5">
+          Craft custom analytical queries, add dynamic query parameters, and inspect response headers live.
+        </p>
+      </div>
+
+      <!-- Real-Time Request Status Pill -->
+      <div class="flex items-center space-x-2 text-xs font-mono self-start sm:self-auto">
+        <span id="workbench-status" class="px-2.5 py-1 rounded-full font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+          Idle
+        </span>
+        <span id="workbench-latency" class="px-2 py-1 rounded bg-slate-100 text-slate-700 font-semibold border border-slate-200" title="Execution latency">
+          0.00ms
+        </span>
+        <span id="workbench-size" class="px-2 py-1 rounded bg-slate-100 text-slate-700 font-semibold border border-slate-200" title="Payload size">
+          0 B
+        </span>
+      </div>
+    </div>
+
+    <!-- Quick Preset Template Chips (Populates bar without locking it) -->
+    <div class="space-y-2">
+      <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 block">Quick Template Presets:</span>
+      <div class="flex flex-wrap gap-2 text-xs">
+        <button type="button" onclick="loadPresetUrl('/api/v1/analytics/head-to-head?team1=CSK&amp;team2=RCB')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition flex items-center space-x-1">
+          <span>⚔️ CSK vs RCB</span>
+        </button>
+        <button type="button" onclick="loadPresetUrl('/api/v1/analytics/head-to-head?team1=MI&amp;team2=KKR')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition flex items-center space-x-1">
+          <span>⚔️ MI vs KKR</span>
+        </button>
+        <button type="button" onclick="loadPresetUrl('/api/v1/analytics/orange-cap?season=2024')" class="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-medium transition flex items-center space-x-1">
+          <span>👑 Orange Cap (2024)</span>
+        </button>
+        <button type="button" onclick="loadPresetUrl('/api/v1/analytics/purple-cap?season=2024')" class="px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 font-medium transition flex items-center space-x-1">
+          <span>🟣 Purple Cap (2024)</span>
+        </button>
+        <button type="button" onclick="loadPresetUrl('/api/v1/analytics/venue?venue=Wankhede')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition flex items-center space-x-1">
+          <span>🏟️ Wankhede Par</span>
+        </button>
+        <button type="button" onclick="loadPresetUrl('/api/v1/players?search=Kohli')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition flex items-center space-x-1">
+          <span>🔍 Player Search (Kohli)</span>
+        </button>
+        <button type="button" onclick="loadPresetUrl('/api/v1/matches/seasons')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition flex items-center space-x-1">
+          <span>📅 All Seasons</span>
+        </button>
+        <button type="button" onclick="loadPresetUrl('/health')" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-medium transition flex items-center space-x-1">
+          <span>🩺 Engine Health</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- The Editable URL Request Bar -->
+    <div class="flex flex-col sm:flex-row items-stretch gap-2">
+      <!-- Method Badge -->
+      <div class="flex-shrink-0 flex items-center justify-center px-4 py-2.5 rounded-lg bg-emerald-100 text-emerald-800 font-bold font-mono text-xs border border-emerald-200">
+        GET
+      </div>
+
+      <!-- Editable URL Input with Clear Button -->
+      <div class="relative flex-grow">
+        <input 
+          id="workbench-url-input" 
+          type="text" 
+          value="/api/v1/analytics/head-to-head?team1=CSK&amp;team2=RCB" 
+          oninput="syncParamsFromUrl(); updateLiveCurl();"
+          placeholder="/api/v1/analytics/... (Type any path or query)" 
+          class="w-full px-4 py-2.5 pr-8 text-xs sm:text-sm font-mono rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-slate-800 bg-white"
+        >
+        <button type="button" onclick="clearWorkbenchUrl()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition" title="Clear path">
+          &times;
+        </button>
+      </div>
+
+      <!-- Execute Button -->
+      <button 
+        id="workbench-run-btn" 
+        type="button" 
+        onclick="executeWorkbench('{% url 'analytics:proxy' %}')" 
+        class="px-5 py-2.5 rounded-lg text-sm font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition flex items-center justify-center space-x-1.5 whitespace-nowrap"
+      >
+        <span>Send Request</span>
+        <svg class="w-4 h-4 ml-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Query Parameters Section (Two-Way Synced) -->
+    <div class="bg-slate-50/80 rounded-xl border border-slate-200 p-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <button type="button" onclick="toggleParamsSection()" class="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-slate-900 transition">
+          <svg id="params-toggle-icon" class="w-3.5 h-3.5 text-slate-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+          <span>Query Parameters</span>
+          <span id="params-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200 text-slate-700 font-semibold">2</span>
+        </button>
+
+        <button type="button" onclick="addParamRow()" class="px-2.5 py-1 rounded text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition flex items-center space-x-1">
+          <span>+ Add Parameter</span>
+        </button>
+      </div>
+
+      <!-- Parameter Rows Container -->
+      <div id="workbench-params-section" class="space-y-2 pt-1">
+        <div id="workbench-params-container" class="space-y-2">
+          <!-- Populated dynamically by JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Multi-Tab Response Inspector -->
+    <div class="bg-slate-900 rounded-xl overflow-hidden border border-slate-800 text-slate-200">
+      
+      <!-- Tab Controls & Quick Copy -->
+      <div class="px-4 py-2 bg-slate-950 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center space-x-1 text-xs">
+          <button id="tab-btn-json" type="button" onclick="switchResponseTab('json')" class="px-3 py-1.5 font-semibold rounded-lg bg-slate-800 text-white transition">
+            JSON Response
+          </button>
+          <button id="tab-btn-headers" type="button" onclick="switchResponseTab('headers')" class="px-3 py-1.5 font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition">
+            Headers &amp; Diagnostics
+          </button>
+          <button id="tab-btn-curl" type="button" onclick="switchResponseTab('curl')" class="px-3 py-1.5 font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition">
+            Live cURL
+          </button>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button type="button" onclick="copyToClipboard(document.getElementById('workbench-result').textContent, this)" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            <span>Copy Response</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Panel 1: JSON Payload -->
+      <div id="tab-panel-json" class="p-4">
+        <pre id="workbench-result" class="text-xs font-mono text-emerald-400 max-h-96 overflow-y-auto leading-relaxed select-all">// Click 'Send Request' or select a preset template above to execute live queries.</pre>
+      </div>
+
+      <!-- Tab Panel 2: Response Headers & Diagnostics -->
+      <div id="tab-panel-headers" class="p-4 hidden max-h-96 overflow-y-auto">
+        <div class="text-xs text-slate-400 mb-3 font-semibold">Captured HTTP Response Headers:</div>
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase">
+              <th class="py-2 px-3">Header Name</th>
+              <th class="py-2 px-3">Captured Value</th>
+            </tr>
+          </thead>
+          <tbody id="workbench-headers-body" class="divide-y divide-slate-800/60 font-mono text-xs">
+            <tr class="text-slate-500 italic">
+              <td colspan="2" class="py-4 text-center">Execute a request to inspect response headers.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tab Panel 3: Live Generated cURL Command -->
+      <div id="tab-panel-curl" class="p-4 hidden">
+        <div class="flex justify-between items-center pb-2 mb-2 border-b border-slate-800">
+          <span class="text-xs text-slate-400 font-mono">Dynamically generated command for your terminal:</span>
+          <button type="button" onclick="copyToClipboard(document.getElementById('workbench-curl-display').textContent, this)" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+            Copy Command
+          </button>
+        </div>
+        <pre id="workbench-curl-display" class="text-xs font-mono text-sky-300 overflow-x-auto leading-relaxed select-all"></pre>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Enterprise Multi-Language Integration Snippets -->
+  <div class="card-crisp p-6 sm:p-8 space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
+      <div>
+        <div class="flex items-center space-x-2">
+          <h2 class="text-xl font-bold text-slate-900 tracking-tight">Enterprise Multi-Language Quickstarts</h2>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-sky-100 text-sky-800 border border-sky-200">
+            6 Languages
+          </span>
+        </div>
+        <p class="text-xs text-slate-500 mt-0.5">
+          Production-ready, battle-tested snippets pre-authenticated with your active API key.
+        </p>
+      </div>
+
+      <!-- Language Selector Tabs -->
+      <div class="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+        <button id="snippet-tab-python" type="button" onclick="switchSnippetTab('python')" class="px-3.5 py-1.5 font-semibold rounded-lg bg-emerald-600 text-white shadow-sm transition">
+          Python
+        </button>
+        <button id="snippet-tab-javascript" type="button" onclick="switchSnippetTab('javascript')" class="px-3.5 py-1.5 font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          JavaScript / Node
+        </button>
+        <button id="snippet-tab-java" type="button" onclick="switchSnippetTab('java')" class="px-3.5 py-1.5 font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          Java (11+)
+        </button>
+        <button id="snippet-tab-go" type="button" onclick="switchSnippetTab('go')" class="px-3.5 py-1.5 font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          Go
+        </button>
+        <button id="snippet-tab-csharp" type="button" onclick="switchSnippetTab('csharp')" class="px-3.5 py-1.5 font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          C# (.NET)
+        </button>
+        <button id="snippet-tab-curl" type="button" onclick="switchSnippetTab('curl')" class="px-3.5 py-1.5 font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          cURL (CLI)
+        </button>
+      </div>
+    </div>
+
+    <!-- Code Block Container -->
+    <div class="bg-slate-900 rounded-xl overflow-hidden border border-slate-800 text-slate-200 shadow-sm">
+      
+      <!-- Panel 1: Python -->
+      <div id="snippet-panel-python" class="space-y-0">
+        <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+          <span class="text-xs font-mono text-emerald-400 font-semibold">Python (httpx / requests)</span>
+          <button type="button" onclick="copyToClipboard(document.getElementById('code-python').innerText, this)" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            <span>Copy Code</span>
+          </button>
+        </div>
+        <pre class="p-4 text-xs font-mono text-emerald-300 overflow-x-auto leading-relaxed select-all"><code id="code-python">{{ snippets.python }}</code></pre>
+      </div>
+
+      <!-- Panel 2: JavaScript / Node -->
+      <div id="snippet-panel-javascript" class="space-y-0 hidden">
+        <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+          <span class="text-xs font-mono text-amber-300 font-semibold">JavaScript / TypeScript (ES6 Fetch)</span>
+          <button type="button" onclick="copyToClipboard(document.getElementById('code-javascript').innerText, this)" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            <span>Copy Code</span>
+          </button>
+        </div>
+        <pre class="p-4 text-xs font-mono text-amber-200 overflow-x-auto leading-relaxed select-all"><code id="code-javascript">{{ snippets.javascript }}</code></pre>
+      </div>
+
+      <!-- Panel 3: Java -->
+      <div id="snippet-panel-java" class="space-y-0 hidden">
+        <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+          <span class="text-xs font-mono text-orange-400 font-semibold">Java 11+ (java.net.http.HttpClient)</span>
+          <button type="button" onclick="copyToClipboard(document.getElementById('code-java').innerText, this)" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            <span>Copy Code</span>
+          </button>
+        </div>
+        <pre class="p-4 text-xs font-mono text-orange-200 overflow-x-auto leading-relaxed select-all"><code id="code-java">{{ snippets.java }}</code></pre>
+      </div>
+
+      <!-- Panel 4: Go -->
+      <div id="snippet-panel-go" class="space-y-0 hidden">
+        <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+          <span class="text-xs font-mono text-cyan-400 font-semibold">Go (net/http Standard Library)</span>
+          <button type="button" onclick="copyToClipboard(document.getElementById('code-go').innerText, this)" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            <span>Copy Code</span>
+          </button>
+        </div>
+        <pre class="p-4 text-xs font-mono text-cyan-200 overflow-x-auto leading-relaxed select-all"><code id="code-go">{{ snippets.go }}</code></pre>
+      </div>
+
+      <!-- Panel 5: C# -->
+      <div id="snippet-panel-csharp" class="space-y-0 hidden">
+        <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+          <span class="text-xs font-mono text-purple-400 font-semibold">C# (.NET 6/7/8/9 HttpClient)</span>
+          <button type="button" onclick="copyToClipboard(document.getElementById('code-csharp').innerText, this)" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            <span>Copy Code</span>
+          </button>
+        </div>
+        <pre class="p-4 text-xs font-mono text-purple-200 overflow-x-auto leading-relaxed select-all"><code id="code-csharp">{{ snippets.csharp }}</code></pre>
+      </div>
+
+      <!-- Panel 6: cURL -->
+      <div id="snippet-panel-curl" class="space-y-0 hidden">
+        <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+          <span class="text-xs font-mono text-emerald-400 font-semibold">cURL (Command Line)</span>
+          <button type="button" onclick="copyToClipboard(document.getElementById('code-curl').innerText, this)" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            <span>Copy Code</span>
+          </button>
+        </div>
+        <pre class="p-4 text-xs font-mono text-emerald-300 overflow-x-auto leading-relaxed select-all"><code id="code-curl">{{ snippets.curl }}</code></pre>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

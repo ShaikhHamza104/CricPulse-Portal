@@ -1,0 +1,240 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}CricPulse Developer Portal — IPL Analytics API{% endblock %}</title>
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom Enhanced Light Theme Styles -->
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="flex flex-col min-h-screen antialiased bg-slate-50 text-slate-800">
+
+  <!-- Main Navigation Bar -->
+  <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        
+        <!-- Logo & Brand -->
+        <div class="flex items-center space-x-3">
+          <a href="{% url 'portal:home' %}" class="flex items-center space-x-2 text-slate-900 group">
+            <span class="text-2xl transition-transform group-hover:scale-110">🏏</span>
+            <div class="flex flex-col">
+              <span class="font-extrabold text-lg tracking-tight text-slate-900 leading-none">
+                CricPulse<span class="text-emerald-600">.</span>
+              </span>
+              <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Dev Portal</span>
+            </div>
+          </a>
+
+          <!-- Backend Version Pill -->
+          <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            API v1.0
+          </span>
+        </div>
+
+        <!-- Desktop Navigation Links -->
+        <nav class="hidden md:flex items-center space-x-1 lg:space-x-2">
+          <a href="{% url 'portal:home' %}" class="px-3 py-2 text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+            Overview
+          </a>
+          <a href="{% url 'analytics:showcase' %}" class="px-3 py-2 text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center space-x-1.5">
+            <span>Cricket Showcase</span>
+            <span class="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-100 text-amber-800">Live</span>
+          </a>
+          <a href="{% url 'portal:docs' %}" class="px-3 py-2 text-sm font-medium rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+            Documentation
+          </a>
+          <a href="{{ CRICPULSE_ENGINE_URL }}/docs" target="_blank" rel="noopener noreferrer" class="px-3 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition flex items-center space-x-1">
+            <span>Swagger UI</span>
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </a>
+        </nav>
+
+        <!-- Right Side: User Controls -->
+        <div class="hidden md:flex items-center space-x-3">
+          {% if user.is_authenticated %}
+            {% if user.is_staff %}
+              <a href="{% url 'admin:index' %}" target="_blank" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition flex items-center space-x-1">
+                <span>⚡ Admin Console</span>
+              </a>
+            {% endif %}
+
+            <a href="{% url 'portal:dashboard' %}" class="inline-flex items-center px-3.5 py-1.5 rounded-lg text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition">
+              <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+              </svg>
+              My API Keys
+            </a>
+
+            <div class="relative group">
+              <a href="{% url 'accounts:profile' %}" class="flex items-center space-x-2 pl-2 pr-3 py-1.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 transition">
+                <div class="w-7 h-7 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs uppercase">
+                  {{ user.username|slice:":1" }}
+                </div>
+                <span>{{ user.username }}</span>
+              </a>
+            </div>
+
+            <a href="{% url 'accounts:logout' %}" class="text-sm font-medium text-slate-500 hover:text-slate-800 transition">
+              Sign Out
+            </a>
+          {% else %}
+            <a href="{% url 'accounts:login' %}" class="px-4 py-2 text-sm font-medium rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition">
+              Sign In
+            </a>
+            <a href="{% url 'accounts:signup' %}" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition">
+              Get Free API Key
+            </a>
+          {% endif %}
+        </div>
+
+        <!-- Mobile Menu Toggle Button -->
+        <div class="flex items-center md:hidden">
+          <button id="mobile-menu-btn" type="button" class="p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 focus:outline-none" aria-label="Toggle menu">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+            </svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Navigation -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200 bg-white px-4 pt-2 pb-4 space-y-1">
+      <a href="{% url 'portal:home' %}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">Overview</a>
+      <a href="{% url 'analytics:showcase' %}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">Cricket Showcase</a>
+      <a href="{% url 'portal:docs' %}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">Documentation</a>
+      <a href="{{ CRICPULSE_ENGINE_URL }}/docs" target="_blank" class="block px-3 py-2 rounded-md text-base font-medium text-slate-500 hover:bg-slate-100">Swagger UI ↗</a>
+      
+      <div class="pt-3 border-t border-slate-200">
+        {% if user.is_authenticated %}
+          <div class="px-3 py-2 font-semibold text-slate-800 text-sm">Signed in as: {{ user.username }}</div>
+          {% if user.is_staff %}
+            <a href="{% url 'admin:index' %}" class="block px-3 py-2 rounded-md text-sm font-semibold text-purple-700 bg-purple-50">Admin Console</a>
+          {% endif %}
+          <a href="{% url 'portal:dashboard' %}" class="block px-3 py-2 rounded-md text-base font-medium text-emerald-700 bg-emerald-50">My API Keys</a>
+          <a href="{% url 'accounts:profile' %}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">Profile Settings</a>
+          <a href="{% url 'accounts:logout' %}" class="block px-3 py-2 rounded-md text-base font-medium text-rose-600 hover:bg-rose-50">Sign Out</a>
+        {% else %}
+          <a href="{% url 'accounts:login' %}" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">Sign In</a>
+          <a href="{% url 'accounts:signup' %}" class="block px-3 py-2 rounded-md text-base font-medium text-center bg-emerald-600 text-white rounded-lg">Get Free API Key</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- Flash Messages / Notifications -->
+  {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+      {% for message in messages %}
+        <div class="alert-auto-dismiss flex items-center justify-between p-4 mb-3 rounded-lg border text-sm font-medium {{ message.tags }}">
+          <div class="flex items-center space-x-2">
+            <span>{{ message }}</span>
+          </div>
+          <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 text-lg leading-none">&times;</button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Main Content Page Block -->
+  <main class="flex-grow">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Professional Platform Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        
+        <!-- Brand Info -->
+        <div class="md:col-span-2 space-y-3">
+          <div class="flex items-center space-x-2">
+            <span class="text-2xl">🏏</span>
+            <span class="font-extrabold text-lg text-slate-900 tracking-tight">CricPulse Developer Portal</span>
+          </div>
+          <p class="text-sm text-slate-500 max-w-sm leading-relaxed">
+            Production-grade developer portal for the CricPulse IPL Analytics Engine. Providing cryptographically secured API keys, rate-limited access, and sub-30ms columnar analytical queries across 16+ seasons of IPL history.
+          </p>
+          <div class="flex items-center space-x-3 text-xs text-slate-500">
+            <span class="flex items-center space-x-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>FastAPI Backend Live</span>
+            </span>
+            <span>•</span>
+            <span>Django 5.2 Control Plane</span>
+            <span>•</span>
+            <span>DuckDB OLAP</span>
+          </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3">Developer Resources</h4>
+          <ul class="space-y-2 text-sm text-slate-600">
+            <li><a href="{% url 'portal:docs' %}" class="hover:text-emerald-600 transition">API Documentation</a></li>
+            <li><a href="{% url 'analytics:showcase' %}" class="hover:text-emerald-600 transition">Cricket Analytics Hub</a></li>
+            <li><a href="{{ CRICPULSE_ENGINE_URL }}/docs" target="_blank" class="hover:text-emerald-600 transition">Interactive Swagger UI ↗</a></li>
+            <li><a href="{{ CRICPULSE_ENGINE_URL }}/health" target="_blank" class="hover:text-emerald-600 transition">Engine Health Probe ↗</a></li>
+          </ul>
+        </div>
+
+        <!-- Account & Security -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3">Portal Access</h4>
+          <ul class="space-y-2 text-sm text-slate-600">
+            {% if user.is_authenticated %}
+              <li><a href="{% url 'portal:dashboard' %}" class="hover:text-emerald-600 transition">API Key Dashboard</a></li>
+              <li><a href="{% url 'accounts:profile' %}" class="hover:text-emerald-600 transition">Developer Profile</a></li>
+              {% if user.is_staff %}
+                <li><a href="{% url 'admin:index' %}" class="text-purple-600 font-semibold hover:text-purple-800 transition">Django Admin Console</a></li>
+              {% endif %}
+            {% else %}
+              <li><a href="{% url 'accounts:login' %}" class="hover:text-emerald-600 transition">Sign In</a></li>
+              <li><a href="{% url 'accounts:signup' %}" class="hover:text-emerald-600 transition">Create Free Account</a></li>
+            {% endif %}
+            <li><span class="text-slate-400 text-xs">Data sourced from Cricsheet (ODbL)</span></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-400">
+        <p>&copy; 2026 CricPulse-Engine by Mohd Hamza Shaikh. Licensed under MIT.</p>
+        <p class="mt-2 sm:mt-0">Engine URL: <code class="text-slate-600">{{ CRICPULSE_ENGINE_URL }}</code></p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Core JavaScript -->
+  <script src="{% static 'js/portal.js' %}"></script>
+  {% block extra_scripts %}{% endblock %}
+
+</body>
+</html>

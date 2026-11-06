@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}API Documentation — CricPulse Developer Portal{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+
+  <!-- Header -->
+  <div class="pb-6 border-b border-slate-200">
+    <div class="flex items-center space-x-2 text-xs font-semibold text-emerald-600 uppercase tracking-wider">
+      <span>REST API Reference</span>
+      <span>•</span>
+      <span>Version 1.0</span>
+    </div>
+    <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mt-1">CricPulse Developer Documentation</h1>
+    <p class="text-slate-600 text-sm sm:text-base mt-2 max-w-3xl leading-relaxed">
+      Complete reference guide for consuming historical IPL match data, career aggregates, head-to-head rivalries, and seasonal leaderboards.
+    </p>
+  </div>
+
+  <!-- Base URL & Authentication Card -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="card-crisp p-6 space-y-3">
+      <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider text-slate-500">Base URL</h3>
+      <div class="flex items-center justify-between p-3 rounded-lg bg-slate-900 text-emerald-400 font-mono text-xs">
+        <span>{{ engine_url }}</span>
+        <button type="button" onclick="copyToClipboard('{{ engine_url }}', this)" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
+          Copy
+        </button>
+      </div>
+      <p class="text-xs text-slate-500">All API requests must target this base URL over HTTPS.</p>
+    </div>
+
+    <div class="card-crisp p-6 space-y-3">
+      <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider text-slate-500">Authentication Header</h3>
+      <div class="flex items-center justify-between p-3 rounded-lg bg-slate-900 text-sky-400 font-mono text-xs">
+        <span>X-API-Key: {{ user_key|default:"cric_live_YOUR_KEY" }}</span>
+        <button type="button" onclick="copyToClipboard('X-API-Key: {{ user_key|default:"cric_live_YOUR_KEY" }}', this)" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 transition">
+          Copy
+        </button>
+      </div>
+      <p class="text-xs text-slate-500">Pass your API key in the custom header for tracking and quota allocation.</p>
+    </div>
+  </div>
+
+  <!-- Multi-Language SDK & Quickstart Examples -->
+  <div class="card-crisp p-6 sm:p-8 space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
+      <div>
+        <div class="flex items-center space-x-2">
+          <h2 class="text-xl font-bold text-slate-900 tracking-tight">Multi-Language Code Quickstarts</h2>
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+            6 Languages
+          </span>
+        </div>
+        <p class="text-xs text-slate-500 mt-1">
+          Select your tech stack to inspect ready-to-run code snippets pre-filled with your authentication header.
+        </p>
+      </div>
+
+      <!-- Language Selector Tabs -->
+      <div class="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+        <button id="docs-snippet-tab-python" type="button" onclick="switchSnippetTab('python', 'docs-snippet')" class="px-3.5 py-1.5 font-semibold rounded-lg bg-emerald-600 text-white shadow-sm transition">
+          Python
+        </button>
+        <button id="docs-snippet-tab-javascript" type="button" onclick="switchSnippetTab('javascript', 'docs-snippet')" class="px-3.5 py-1.5 font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          JavaScript / Node
+        </button>
+        <button id="docs-snippet-tab-java" type="button" onclick="switchSnippetTab('java', 'docs-snippet')" class="px-3.5 py-1.5 font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          Java (11+)
+        </button>
+        <button id="docs-snippet-tab-go" type="button" onclick="switchSnippetTab('go', 'docs-snippet')" class="px-3.5 py-1.5 font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          Go
+        </button>
+        <button id="docs-snippet-tab-csharp" type="button" onclick="switchSnippetTab('csharp', 'docs-snippet')" class="px-3.5 py-1.5 font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          C# (.NET)
+        </button>
+        <button id="docs-snippet-tab-curl" type="button" onclick="switchSnippetTab('curl', 'docs-snippet')" class="px-3.5 py-1.5 font-semibold rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          cURL
+        </button>
+      </div>
+    </div>
+
+    <!-- Code Block Container -->
+    <div class="bg-slate-900 rounded-xl overflow-hidden border border-slate-800 text-slate-200 shadow-sm">
+      
+      <!-- Panel 1: Python -->
+      <div id="docs-snippet-panel-python" class="space-y-0">
+        <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+          <span class="text-xs font-mono text-emerald-400 font-semibold">Python (httpx / requests)</span>
+          <button type="button" onclick="copyToClipboard(document.getElementById('docs-code-python').innerText, this)" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            <span>Copy Code</span>
+          </button>
+        </div>
+        <pre class="p-4 text-xs font-mono text-emerald-300 overflow-x-auto leading-relaxed select-all"><code id="docs-code-python">{{ snippets.python }}</code></pre>
+      </div>
+
+      <!-- Panel 2: JavaScript / Node -->
+      <div id="docs-snippet-panel-javascript" class="space-y-0 hidden">
+        <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+          <span class="text-xs font-mono text-amber-300 font-semibold">JavaScript / TypeScript (ES6 Fetch)</span>
+          <button type="button" onclick="copyToClipboard(document.getElementById('docs-code-javascript').innerText, this)" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            <span>Copy Code</span>
+          </button>
+        </div>
+        <pre class="p-4 text-xs font-mono text-amber-200 overflow-x-auto leading-relaxed select-all"><code id="docs-code-javascript">{{ snippets.javascript }}</code></pre>
+      </div>
+
+      <!-- Panel 3: Java -->
+      <div id="docs-snippet-panel-java" class="space-y-0 hidden">
+        <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+          <span class="text-xs font-mono text-orange-400 font-semibold">Java 11+ (java.net.http.HttpClient)</span>
+          <button type="button" onclick="copyToClipboard(document.getElementById('docs-code-java').innerText, this)" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            <span>Copy Code</span>
+          </button>
+        </div>
+        <pre class="p-4 text-xs font-mono text-orange-200 overflow-x-auto leading-relaxed select-all"><code id="docs-code-java">{{ snippets.java }}</code></pre>
+      </div>
+
+      <!-- Panel 4: Go -->
+      <div id="docs-snippet-panel-go" class="space-y-0 hidden">
+        <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+          <span class="text-xs font-mono text-cyan-400 font-semibold">Go (net/http Standard Library)</span>
+          <button type="button" onclick="copyToClipboard(document.getElementById('docs-code-go').innerText, this)" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            <span>Copy Code</span>
+          </button>
+        </div>
+        <pre class="p-4 text-xs font-mono text-cyan-200 overflow-x-auto leading-relaxed select-all"><code id="docs-code-go">{{ snippets.go }}</code></pre>
+      </div>
+
+      <!-- Panel 5: C# -->
+      <div id="docs-snippet-panel-csharp" class="space-y-0 hidden">
+        <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+          <span class="text-xs font-mono text-purple-400 font-semibold">C# (.NET 6/7/8/9 HttpClient)</span>
+          <button type="button" onclick="copyToClipboard(document.getElementById('docs-code-csharp').innerText, this)" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            <span>Copy Code</span>
+          </button>
+        </div>
+        <pre class="p-4 text-xs font-mono text-purple-200 overflow-x-auto leading-relaxed select-all"><code id="docs-code-csharp">{{ snippets.csharp }}</code></pre>
+      </div>
+
+      <!-- Panel 6: cURL -->
+      <div id="docs-snippet-panel-curl" class="space-y-0 hidden">
+        <div class="px-4 py-2.5 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+          <span class="text-xs font-mono text-emerald-400 font-semibold">cURL (Command Line)</span>
+          <button type="button" onclick="copyToClipboard(document.getElementById('docs-code-curl').innerText, this)" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center space-x-1">
+            <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+            <span>Copy Code</span>
+          </button>
+        </div>
+        <pre class="p-4 text-xs font-mono text-emerald-300 overflow-x-auto leading-relaxed select-all"><code id="docs-code-curl">{{ snippets.curl }}</code></pre>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Endpoints Catalog -->
+  <div class="space-y-8">
+    <h2 class="text-2xl font-bold text-slate-900">Endpoints Catalog</h2>
+
+    <!-- Section 1: Analytics -->
+    <div class="card-crisp overflow-hidden">
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+        <h3 class="text-base font-bold text-slate-900">1. Cricket Analytics Endpoints</h3>
+        <p class="text-xs text-slate-500">Sub-30ms columnar calculations powered by DuckDB.</p>
+      </div>
+      <div class="divide-y divide-slate-100 p-6 space-y-6">
+
+        <!-- Endpoint 1.1 -->
+        <div class="space-y-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2 py-1 rounded text-xs font-mono font-bold bg-emerald-100 text-emerald-800">GET</span>
+            <span class="font-mono text-sm font-semibold text-slate-800">/api/v1/analytics/head-to-head</span>
+          </div>
+          <p class="text-xs text-slate-600">Calculates complete historical rivalry between two teams. Accepts franchise acronyms (e.g. CSK, MI, RCB).</p>
+          <div class="bg-slate-50 p-3 rounded-lg text-xs font-mono text-slate-700">
+            Query Parameters: <code class="text-emerald-700">team1</code> (required), <code class="text-emerald-700">team2</code> (required)
+          </div>
+        </div>
+
+        <!-- Endpoint 1.2 -->
+        <div class="space-y-3 pt-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2 py-1 rounded text-xs font-mono font-bold bg-emerald-100 text-emerald-800">GET</span>
+            <span class="font-mono text-sm font-semibold text-slate-800">/api/v1/analytics/orange-cap</span>
+          </div>
+          <p class="text-xs text-slate-600">Returns seasonal top run-scorer leaderboard with official wide-ball and super-over exclusion rules.</p>
+          <div class="bg-slate-50 p-3 rounded-lg text-xs font-mono text-slate-700">
+            Query Parameters: <code class="text-emerald-700">season</code> (e.g. 2024), <code class="text-emerald-700">limit</code> (default: 10)
+          </div>
+        </div>
+
+        <!-- Endpoint 1.3 -->
+        <div class="space-y-3 pt-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2 py-1 rounded text-xs font-mono font-bold bg-emerald-100 text-emerald-800">GET</span>
+            <span class="font-mono text-sm font-semibold text-slate-800">/api/v1/analytics/purple-cap</span>
+          </div>
+          <p class="text-xs text-slate-600">Returns seasonal top wicket-takers crediting only bowler-attributed dismissals and excluding super overs.</p>
+          <div class="bg-slate-50 p-3 rounded-lg text-xs font-mono text-slate-700">
+            Query Parameters: <code class="text-emerald-700">season</code> (e.g. 2024), <code class="text-emerald-700">limit</code> (default: 10)
+          </div>
+        </div>
+
+        <!-- Endpoint 1.4 -->
+        <div class="space-y-3 pt-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2 py-1 rounded text-xs font-mono font-bold bg-emerald-100 text-emerald-800">GET</span>
+            <span class="font-mono text-sm font-semibold text-slate-800">/api/v1/analytics/venue</span>
+          </div>
+          <p class="text-xs text-slate-600">Calculates stadium par score strictly on completed innings (&ge; 19 overs or 10 wickets).</p>
+          <div class="bg-slate-50 p-3 rounded-lg text-xs font-mono text-slate-700">
+            Query Parameters: <code class="text-emerald-700">venue</code> (e.g. "Wankhede Stadium")
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Section 2: Players & Matches -->
+    <div class="card-crisp overflow-hidden">
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+        <h3 class="text-base font-bold text-slate-900">2. Match &amp; Player Endpoints</h3>
+        <p class="text-xs text-slate-500">Directory and granular scorecard lookups.</p>
+      </div>
+      <div class="divide-y divide-slate-100 p-6 space-y-6">
+
+        <div class="space-y-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2 py-1 rounded text-xs font-mono font-bold bg-emerald-100 text-emerald-800">GET</span>
+            <span class="font-mono text-sm font-semibold text-slate-800">/api/v1/matches</span>
+          </div>
+          <p class="text-xs text-slate-600">Paginated list of match records filterable by season, team alias, venue, and city.</p>
+        </div>
+
+        <div class="space-y-3 pt-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2 py-1 rounded text-xs font-mono font-bold bg-emerald-100 text-emerald-800">GET</span>
+            <span class="font-mono text-sm font-semibold text-slate-800">/api/v1/players</span>
+          </div>
+          <p class="text-xs text-slate-600">Searchable player directory supporting fuzzy name lookups (e.g. <code class="text-emerald-700">?search=Kohli</code>).</p>
+        </div>
+
+        <div class="space-y-3 pt-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2 py-1 rounded text-xs font-mono font-bold bg-emerald-100 text-emerald-800">GET</span>
+            <span class="font-mono text-sm font-semibold text-slate-800">/api/v1/players/{player_id}</span>
+          </div>
+          <p class="text-xs text-slate-600">Full career batting aggregates (strike rate, 4s, 6s, average) and bowling aggregates (overs in strict decimal, economy, wickets).</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Section 3: Monitoring & Status -->
+    <div class="card-crisp overflow-hidden">
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+        <h3 class="text-base font-bold text-slate-900">3. System Probes</h3>
+      </div>
+      <div class="p-6 space-y-4 text-xs font-mono">
+        <div class="flex items-center space-x-3">
+          <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-bold">GET</span>
+          <span class="font-semibold text-slate-800">/health</span>
+          <span class="text-slate-500 font-sans">— Server status and latency stamping</span>
+        </div>
+        <div class="flex items-center space-x-3">
+          <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-bold">GET</span>
+          <span class="font-semibold text-slate-800">/db-health</span>
+          <span class="text-slate-500 font-sans">— Real-time DuckDB active connection check</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

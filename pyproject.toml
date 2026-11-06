@@ -1,0 +1,25 @@
+[project]
+name = "cricpulse-portal"
+version = "0.1.0"
+description = "CricPulse Developer Portal - Production-grade Authentication, API Key Management & Analytics Showcase"
+readme = "README.md"
+authors = [
+    { name = "Mohd Hamza Shaikh", email = "kmohdhamza10@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "dj-database-url>=2.3.0",
+    "django>=5.1",
+    "gunicorn>=23.0.0",
+    "httpx>=0.28.0",
+    "psycopg[binary]>=3.2.0",
+    "python-dotenv>=1.0.0",
+    "sentry-sdk>=2.20.0",
+    "whitenoise>=6.8.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "pytest-django>=4.14.0",
+]
