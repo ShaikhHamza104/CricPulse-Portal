@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='apikey',
             name='hashed_key',
-            field=models.CharField(db_index=True, help_text='SHA-256 cryptographic hash of the API key.', max_length=64, null=True),
+            field=models.CharField(help_text='SHA-256 cryptographic hash of the API key.', max_length=64, null=True),
         ),
         migrations.AddField(
             model_name='apikey',
@@ -48,7 +48,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='apikey',
             name='hashed_key',
-            field=models.CharField(db_index=True, help_text='SHA-256 cryptographic hash of the API key.', max_length=64, unique=True),
+            field=models.CharField(help_text='SHA-256 cryptographic hash of the API key.', max_length=64, unique=True),
         ),
         migrations.RemoveField(
             model_name='apikey',

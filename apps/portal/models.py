@@ -1,9 +1,3 @@
-import secrets
-from django.conf import settings
-from django.db import models
-from django.utils import timezone
-
-
 import hashlib
 import secrets
 from django.conf import settings
@@ -37,7 +31,6 @@ class APIKey(models.Model):
     hashed_key = models.CharField(
         max_length=64,
         unique=True,
-        db_index=True,
         help_text="SHA-256 cryptographic hash of the API key.",
     )
     prefix = models.CharField(
