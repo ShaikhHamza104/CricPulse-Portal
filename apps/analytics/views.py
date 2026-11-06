@@ -1,6 +1,8 @@
 import ipaddress
 import logging
+import re
 import time
+import urllib.parse
 import httpx
 from django.conf import settings
 from django.contrib import messages
@@ -40,6 +42,24 @@ def _get_client_ip(request) -> str:
         return remote_addr
     except ValueError:
         return "127.0.0.1"
+
+
+# Strict Route Allowlist Patterns for live_query_proxy (SSRF defense)
+ALLOWED_ROUTE_PATTERNS = [
+    re.compile(r"^/health/?$"),
+    re.compile(r"^/db-health/?$"),
+    re.compile(r"^/api/v1/analytics/head-to-head/?$"),
+    re.compile(r"^/api/v1/analytics/orange-cap/?$"),
+    re.compile(r"^/api/v1/analytics/purple-cap/?$"),
+    re.compile(r"^/api/v1/analytics/venue/?$"),
+    re.compile(r"^/api/v1/analytics/team-records/?$"),
+    re.compile(r"^/api/v1/analytics/phase/?$"),
+    re.compile(r"^/api/v1/players/?$"),
+    re.compile(r"^/api/v1/players/[a-zA-Z0-9_\-]+/?$"),
+    re.compile(r"^/api/v1/matches/?$"),
+    re.compile(r"^/api/v1/matches/seasons/?$"),
+    re.compile(r"^/api/v1/matches/[a-zA-Z0-9_\-]+/?$"),
+]
 
 # Standard IPL Franchise Aliases
 IPL_TEAMS = [
@@ -231,41 +251,69 @@ def live_query_proxy(request):
     extra_params = {k: v for k, v in request.GET.items() if k != "endpoint"}
     if extra_params:
         separator = "&" if "?" in endpoint else "?"
-        from urllib.parse import urlencode
-        endpoint = f"{endpoint}{separator}{urlencode(extra_params)}"
+        endpoint = f"{endpoint}{separator}{urllib.parse.urlencode(extra_params)}"
 
     # SSRF & Path Traversal Defensive Validation:
-    # Strictly prohibit protocols, authority redirects, directory traversals, or userinfo
+    # Strictly reject protocols, authority redirects, directory traversals, encoded dot-segments (%2e), or userinfo
+    lower_endpoint = endpoint.lower()
     if (
-        "://" in endpoint
+        "%2e" in lower_endpoint
+        or ".." in endpoint
+        or ".." in urllib.parse.unquote(endpoint)
+        or "://" in endpoint
         or endpoint.startswith("//")
         or endpoint.startswith("\\\\")
-        or ".." in endpoint
         or "@" in endpoint
     ):
         return JsonResponse(
             {
                 "status_code": 400,
                 "status_text": "Bad Request",
-                "error": "Invalid endpoint target. Protocols, backslashes, and path traversals are strictly prohibited.",
+                "error": "Invalid endpoint target. Encoded dot-segments (%2e), protocols, backslashes, and path traversals are strictly prohibited.",
             },
             status=400,
         )
 
-    if not endpoint.startswith("/"):
-        endpoint = f"/{endpoint}"
+    # Parse with urllib.parse
+    parsed = urllib.parse.urlsplit(endpoint)
+    if parsed.scheme or parsed.netloc:
+        return JsonResponse(
+            {
+                "status_code": 400,
+                "status_text": "Bad Request",
+                "error": "Invalid endpoint target. External schemes and authority targets are strictly prohibited.",
+            },
+            status=400,
+        )
 
-    # Whitelist valid API engine route prefixes
-    allowed_prefixes = ("/api/v1/", "/health", "/db-health")
-    if not any(endpoint.startswith(p) for p in allowed_prefixes):
+    path = parsed.path
+    if not path.startswith("/"):
+        path = f"/{path}"
+
+    # Strict Route Allowlist Matching
+    if not any(pattern.match(path) for pattern in ALLOWED_ROUTE_PATTERNS):
         return JsonResponse(
             {
                 "status_code": 403,
                 "status_text": "Forbidden",
-                "error": "Access denied. Only CricPulse Engine endpoints (/api/v1/*, /health, /db-health) are allowed.",
+                "error": f"Access denied. Route '{path}' is not in the permitted CricPulse Engine endpoint allowlist.",
             },
             status=403,
         )
+
+    # Validate 'season' query parameter if present (must be a 4-digit integer between 2008 and 2026)
+    query_params = urllib.parse.parse_qs(parsed.query)
+    if "season" in query_params:
+        season_val = query_params["season"][0].strip()
+        if not (season_val.isdigit() and len(season_val) == 4 and 2008 <= int(season_val) <= 2026):
+            return JsonResponse(
+                {
+                    "status_code": 400,
+                    "status_text": "Bad Request",
+                    "error": f"Invalid season parameter '{season_val}'. Must be a 4-digit year between 2008 and 2026.",
+                },
+                status=400,
+            )
 
     engine_url = getattr(
         settings, "CRICPULSE_ENGINE_URL", "https://cricpulse-engine.onrender.com"

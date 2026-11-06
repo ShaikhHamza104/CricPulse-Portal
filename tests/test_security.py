@@ -27,6 +27,37 @@ def test_ssrf_protection_rejects_path_traversal(client):
     assert "Invalid endpoint target" in resp.json()["error"]
 
 
+def test_ssrf_protection_rejects_encoded_dot_segments(client):
+    proxy_url = reverse("analytics:proxy")
+    # Test rejection of percent-encoded dot segments (%2e%2e)
+    resp1 = client.get(proxy_url, {"endpoint": "/api/v1/%2e%2e/%2e%2e/etc/passwd"})
+    assert resp1.status_code == 400
+    assert "Invalid endpoint target" in resp1.json()["error"]
+
+    resp2 = client.get(proxy_url, {"endpoint": "/api/v1/%2E%2E/health"})
+    assert resp2.status_code == 400
+    assert "Invalid endpoint target" in resp2.json()["error"]
+
+
+def test_ssrf_protection_validates_season(client):
+    proxy_url = reverse("analytics:proxy")
+
+    # Non-digit season
+    resp_bad1 = client.get(proxy_url, {"endpoint": "/api/v1/analytics/orange-cap?season=summer"})
+    assert resp_bad1.status_code == 400
+    assert "Invalid season parameter" in resp_bad1.json()["error"]
+
+    # Out-of-range season (< 2008)
+    resp_bad2 = client.get(proxy_url, {"endpoint": "/api/v1/analytics/orange-cap?season=1999"})
+    assert resp_bad2.status_code == 400
+    assert "Invalid season parameter" in resp_bad2.json()["error"]
+
+    # Out-of-range season (> 2026)
+    resp_bad3 = client.get(proxy_url, {"endpoint": "/api/v1/analytics/orange-cap?season=2099"})
+    assert resp_bad3.status_code == 400
+    assert "Invalid season parameter" in resp_bad3.json()["error"]
+
+
 def test_ssrf_protection_rejects_non_whitelisted_routes(client):
     proxy_url = reverse("analytics:proxy")
     # Test rejection of unwhitelisted internal routes
